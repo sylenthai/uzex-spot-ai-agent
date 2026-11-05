@@ -28,33 +28,25 @@ DB_PATH = os.getenv("DB_PATH", "uzex_data.db")
 # Strict Anti-Hallucination Refusal Message (NO DIGITS, NO COMPANY NAMES, NO COMMODITIES!)
 NO_DATA_FOUND_UZ = (
     "❌ <b>Ma'lumot topilmadi</b>\n\n"
-    "Birja ma'lumotlari reyestrida ushbu so'rov bo'yicha ma'lumot mavjud emas.\n\n"
-    "⚠️ <i>Qat'iy qoida: Agent faqat tasdiqlangan reyestr yozuvlariga tayanadi va "
-    "ma'lumot yo'q joyda raqam, kompaniya yoki tovarlarni keltirmaydi hamda o'ylab topmaydi.</i>"
+    "Birja ma'lumotlari reyestrida ushbu so'rov bo'yicha ma'lumot mavjud emas."
 )
 
 NO_DATA_FOUND_RU = (
     "❌ <b>Данные не найдены</b>\n\n"
-    "В реестре биржевых сделок информация по указанному запросу отсутствует.\n\n"
-    "⚠️ <i>Строгое правило: Агент опирается исключительно на официальный реестр и "
-    "категорически не указывает и не выдумывает цифры, компании или товары при отсутствии данных.</i>"
+    "В реестре биржевых сделок информация по данному запросу отсутствует."
 )
 
-# Identity Response (STRICTLY NO MENTION OF DEEPSEEK, OPENAI, OR ANY LLM MODEL!)
+# Identity Response (Official & Formal, strictly no mention of DeepSeek/OpenAI/LLM)
 IDENTITY_RESPONSE_UZ = (
-    f"🏛 <b>Men — {BOT_NAME_UZ}man.</b>\n\n"
-    "Mening vazifam — tovar-xomashyo birjasining rasmiy reyestr ma'lumotlari "
-    "(bitimlar, shartnomalar, narxlar, ishtirokchilar va brokerlar) bo'yicha aniq faktik ma'lumotlar taqdim etish.\n\n"
-    "🔒 <b>Xavfsizlik kafolati:</b> Men faqat tasdiqlangan birja bazasi bilan ishlayman va "
-    "ma'lumot yo'q joyda hech qachon son yoki nomlarni o'ylab topmayman."
+    f"🏛 <b>{BOT_NAME_UZ}</b>\n\n"
+    "O‘zbekiston respublika tovar-xomashyo birjasi (UZEX) spot bitimlari, shartnomalar, "
+    "tovar narxlari, savdo ishtirokchilari va brokerlik idoralari bo‘yicha rasmiy axborot xizmati."
 )
 
 IDENTITY_RESPONSE_RU = (
-    f"🏛 <b>Я — {BOT_NAME_RU}.</b>\n\n"
-    "Моя задача — предоставлять достоверную аналитическую и справочную информацию "
-    "по официальному реестру товарно-сырьевой биржи (сделки, контракты, цены, участники и брокеры).\n\n"
-    "🔒 <b>Гарантия надежности:</b> Я опираюсь исключительно на верифицированную базу данных и "
-    "строго не выдумываю цифры или наименования при их отсутствии."
+    f"🏛 <b>{BOT_NAME_RU}</b>\n\n"
+    "Официальная информационная служба по биржевым спот-сделкам, карточкам контрактов, "
+    "ценам на товары, участникам торгов и брокерским конторам UZEX."
 )
 
 # Out of scope Response
@@ -137,23 +129,20 @@ CONTRACT_FORM_TRANSLATIONS = {
 MESSAGES = {
     "uz": {
         "welcome": (
-            f"👋 <b>Assalomu alaykum!</b>\n\n"
-            f"Men <b>{BOT_NAME_UZ}</b>man.\n"
-            f"Mening bazamda 2022–2026 yillardagi <b>500 000 ta birja bitimi</b>, "
-            f"6 616 ta shartnoma, 14 392 ta kompaniya va brokerlik idoralari mavjud.\n\n"
-            f"📌 <b>Asosiy qoidam:</b> Men faqat aniq faktlarga tayanaman. Bazada yo'q ma'lumotni hech qachon o'ylab topmayman!\n\n"
-            f"Savolingizni erkin matn ko'rinishida yuborishingiz yoki quyidagi menyudan foydalanishingiz mumkin:"
+            "👋 <b>Assalomu alaykum!</b>\n\n"
+            "O‘zbekiston respublika tovar-xomashyo birjasi (UZEX) spot bitimlari axborot tizimiga xush kelibsiz.\n\n"
+            "Quyidagi menyu orqali kerakli bo‘limni tanlang yoki savolingizni matn ko‘rinishida yuboring:"
         ),
         "help": (
             f"📖 <b>{BOT_NAME_UZ} Yo'riqnomasi:</b>\n\n"
-            f"Quyidagi shakllarda so'rov yuborishingiz mumkin:\n"
-            f"• <b>Bitim raqami:</b> <code>504707</code> yoki <code>bitim 100001</code>\n"
-            f"• <b>Shartnoma raqami:</b> <code>shartnoma 100034</code>\n"
-            f"• <b>Kompaniya STIR:</b> <code>915688255</code> yoki kompaniya nomi\n"
-            f"• <b>Broker kodi:</b> <code>BK001</code> yoki <code>BK060</code>\n"
-            f"• <b>Tovar narxi:</b> <i>sement narxi</i>, <i>paxta o'rtacha narxi</i>\n"
-            f"• <b>Reytinglar:</b> <i>top sotuvchilar</i>, <i>eng yirik xaridorlar</i>\n"
-            f"• <b>Dollar kursi:</b> <i>dollar kursi 15.05.2024</i>"
+            "Quyidagi shakllarda so'rov yuborishingiz mumkin:\n"
+            "• <b>Bitim raqami:</b> <code>504707</code> yoki <code>bitim 100001</code>\n"
+            "• <b>Shartnoma raqami:</b> <code>shartnoma 100034</code>\n"
+            "• <b>Kompaniya STIR:</b> <code>915688255</code> yoki kompaniya nomi\n"
+            "• <b>Broker kodi:</b> <code>BK001</code> yoki <code>BK060</code>\n"
+            "• <b>Tovar narxi:</b> <i>sement narxi</i>, <i>paxta o'rtacha narxi</i>\n"
+            "• <b>Reytinglar:</b> <i>top sotuvchilar</i>, <i>eng yirik xaridorlar</i>\n"
+            "• <b>Dollar kursi:</b> <i>dollar kursi 15.05.2024</i>"
         ),
         "btn_deal": "🔍 Bitim tekshirish",
         "btn_contract": "📄 Shartnoma",
@@ -170,13 +159,9 @@ MESSAGES = {
     },
     "ru": {
         "welcome": (
-            f"👋 <b>Здравствуйте!</b>\n\n"
-            f"Я <b>{BOT_NAME_RU}</b>.\n"
-            f"В моей базе содержится <b>500 000 сделок</b> с 2022 по 2026 год, "
-            f"6 616 контрактов, 14 392 компании и 120 брокерских контор.\n\n"
-            f"📌 <b>Главное правило:</b> Я строго опираюсь только на факты реестра. "
-            f"Если данных нет в базе, я никогда ничего не придумываю!\n\n"
-            f"Вы можете задать вопрос в свободной форме или воспользоваться меню ниже:"
+            "👋 <b>Здравствуйте!</b>\n\n"
+            "Добро пожаловать в информационную систему спот-сделок Узбекской республиканской товарно-сырьевой биржи (UZEX).\n\n"
+            "Выберите нужный раздел в меню ниже или отправьте ваш запрос в виде текста:"
         ),
         "help": (
             f"📖 <b>Справка по {BOT_NAME_RU}:</b>\n\n"
