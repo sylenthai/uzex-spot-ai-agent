@@ -58,6 +58,7 @@ def build_database():
             print(f"Warning: could not remove {DB_PATH}: {e}")
 
     conn = sqlite3.connect(DB_PATH)
+    conn.create_function("py_lower", 1, lambda s: s.lower() if s is not None else "")
     cur = conn.cursor()
 
     # Enable WAL mode and synchronous=NORMAL for fastest bulk inserts and read performance
@@ -362,6 +363,7 @@ def build_database():
     CREATE TABLE product_summary AS
     SELECT 
         product_name,
+        py_lower(product_name) as product_name_lower,
         deal_year,
         unit,
         COUNT(*) as deals_count,
@@ -375,6 +377,7 @@ def build_database():
     GROUP BY product_name, deal_year, unit;
     """)
     cur.execute("CREATE INDEX idx_prod_sum_name ON product_summary(product_name);")
+    cur.execute("CREATE INDEX idx_prod_sum_lower ON product_summary(product_name_lower);")
     cur.execute("CREATE INDEX idx_prod_sum_year ON product_summary(deal_year);")
 
     cur.execute("""
@@ -485,6 +488,7 @@ def build_database():
     CREATE TABLE product_top_sellers AS
     SELECT 
         d.product_name,
+        py_lower(d.product_name) as product_name_lower,
         d.seller_inn,
         p.name as seller_name,
         p.region as seller_region,
@@ -497,6 +501,7 @@ def build_database():
     GROUP BY d.product_name, d.seller_inn;
     """)
     cur.execute("CREATE INDEX idx_pts_prod ON product_top_sellers(product_name);")
+    cur.execute("CREATE INDEX idx_pts_lower ON product_top_sellers(product_name_lower);")
     cur.execute("CREATE INDEX idx_pts_total ON product_top_sellers(total_uzs DESC);")
 
     # Fast Product Top Buyers
@@ -504,6 +509,7 @@ def build_database():
     CREATE TABLE product_top_buyers AS
     SELECT 
         d.product_name,
+        py_lower(d.product_name) as product_name_lower,
         d.buyer_inn,
         p.name as buyer_name,
         p.region as buyer_region,
@@ -516,6 +522,7 @@ def build_database():
     GROUP BY d.product_name, d.buyer_inn;
     """)
     cur.execute("CREATE INDEX idx_ptb_prod ON product_top_buyers(product_name);")
+    cur.execute("CREATE INDEX idx_ptb_lower ON product_top_buyers(product_name_lower);")
     cur.execute("CREATE INDEX idx_ptb_total ON product_top_buyers(total_uzs DESC);")
 
     # Fast Top Brokers
@@ -536,14 +543,6 @@ def build_database():
     ORDER BY total_volume_uzs DESC;
     """)
     cur.execute("CREATE INDEX idx_tbs_code ON top_brokers_summary(broker_code);")
-
-    # Add lower-case columns for unicode case-insensitivity
-    for tbl in ["product_summary", "product_top_sellers", "product_top_buyers"]:
-        cur.execute(f"ALTER TABLE {tbl} ADD COLUMN product_name_lower TEXT;")
-        cur.execute(f"SELECT rowid, product_name FROM {tbl};")
-        for r_id, p_name in cur.fetchall():
-            cur.execute(f"UPDATE {tbl} SET product_name_lower = ? WHERE rowid = ?;", (p_name.lower(), r_id))
-        cur.execute(f"CREATE INDEX idx_{tbl}_lower ON {tbl}(product_name_lower);")
 
     conn.commit()
     print(f"Summary tables created in {time.time() - sum_start:.2f}s")

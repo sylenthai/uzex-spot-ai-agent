@@ -246,17 +246,43 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 3. Processing Query
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
-    res = route_query(enriched_query, forced_lang=lang)
+    try:
+        res = route_query(enriched_query, forced_lang=lang)
 
-    # Attach drill-down buttons if deal
-    inline_kb = None
-    if res["intent"] == "deal_lookup" and res.get("raw_data"):
-        inline_kb = get_deal_inline_keyboard(res["raw_data"], lang)
+        # Attach drill-down buttons if deal
+        inline_kb = None
+        if res.get("intent") == "deal_lookup" and res.get("raw_data"):
+            inline_kb = get_deal_inline_keyboard(res["raw_data"], lang)
 
-    await update.message.reply_html(
-        res["response_text"],
-        reply_markup=inline_kb
-    )
+        # Robust HTML delivery with plain-text fallback if tags fail
+        try:
+            await update.message.reply_html(
+                res["response_text"],
+                reply_markup=inline_kb
+            )
+        except Exception as html_err:
+            logger.warning(f"reply_html failed: {html_err}, falling back to plain text")
+            clean_text = (
+                res["response_text"]
+                .replace("<b>", "").replace("</b>", "")
+                .replace("<i>", "").replace("</i>", "")
+                .replace("<code>", "").replace("</code>", "")
+            )
+            await update.message.reply_text(
+                clean_text,
+                reply_markup=inline_kb
+            )
+    except Exception as e:
+        logger.error(f"Error handling user message: {e}", exc_info=True)
+        fallback_msg = (
+            "❌ <b>Xatolik yuz berdi</b>\n\nSo'rovingizni qayta ishlashda kutilmagan xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring."
+            if lang == "uz"
+            else "❌ <b>Произошла ошибка</b>\n\nПри обработке вашего запроса произошла непредвиденная ошибка. Пожалуйста, повторите попытку."
+        )
+        try:
+            await update.message.reply_html(fallback_msg)
+        except Exception:
+            await update.message.reply_text(fallback_msg.replace("<b>", "").replace("</b>", ""))
 
 def run_cli_interactive():
     """Interactive console simulation mode when running without a bot token."""
@@ -306,8 +332,36 @@ def run_cli_interactive():
             print("\nChiqildi.")
             break
 
+def ensure_database():
+    """Verifies that uzex_data.db exists and contains all required tables and summaries."""
+    db_file = os.getenv("DB_PATH", "uzex_data.db")
+    rebuild = False
+    if not os.path.exists(db_file) or os.path.getsize(db_file) < 1000000:
+        logger.warning(f"Database {db_file} missing or incomplete. Initiating build...")
+        rebuild = True
+    else:
+        try:
+            import sqlite3
+            conn = sqlite3.connect(db_file)
+            c = conn.cursor()
+            c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = {r[0] for r in c.fetchall()}
+            conn.close()
+            required = ["deals", "contracts", "participants", "product_summary", "product_top_sellers", "product_top_buyers", "top_brokers_summary"]
+            if any(t not in tables for t in required):
+                logger.warning("Database missing critical summary tables. Rebuilding...")
+                rebuild = True
+        except Exception as e:
+            logger.warning(f"Database check failed: {e}. Rebuilding...")
+            rebuild = True
+
+    if rebuild:
+        import db_builder
+        db_builder.build_database()
+
 def main():
     """Starts the bot or runs in console test mode if no token."""
+    ensure_database()
     token = TELEGRAM_BOT_TOKEN.strip()
     if not token or token == "YOUR_TELEGRAM_BOT_TOKEN_HERE":
         print("\n" + "=" * 65)
