@@ -1,7 +1,8 @@
 """
 Intelligent Query Router and Intent Classifier
 Analyzes bilingual queries, extracts entities, coordinates with database and guardrails.
-Includes comprehensive Uzbek-Russian commodity synonyms, model concealment, and zero-hallucination protection.
+Includes comprehensive Uzbek-Russian commodity synonyms, model concealment, zero-hallucination protection,
+and natural conversational handling for everyday questions.
 """
 
 import re
@@ -14,7 +15,16 @@ from config import (
     IDENTITY_RESPONSE_UZ,
     IDENTITY_RESPONSE_RU,
     OUT_OF_SCOPE_UZ,
-    OUT_OF_SCOPE_RU
+    OUT_OF_SCOPE_RU,
+    GREETING_RESPONSE_UZ,
+    GREETING_RESPONSE_RU,
+    GRATITUDE_RESPONSE_UZ,
+    GRATITUDE_RESPONSE_RU,
+    AVAILABLE_PRODUCTS_UZ,
+    AVAILABLE_PRODUCTS_RU,
+    DATABASE_INFO_UZ,
+    DATABASE_INFO_RU,
+    MESSAGES
 )
 
 COMMODITY_PATTERNS = [
@@ -26,7 +36,7 @@ COMMODITY_PATTERNS = [
     (r"(?:un|мука|мук)", ["мука"], "Мука пшеничная"),
     (r"(?:shakar|сахар)", ["сахар"], "Сахар"),
     (r"(?:dizel|дизел|solyark|солярк)", ["топливо дизельное", "дизельное топливо"], "Топливо дизельное"),
-    (r"(?:propan|пропан|suyuqlantirilgan gaz|сжиженный газ|gaz|газ)", ["сжиженный газ"], "Сжиженный газ"),
+    (r"(?:propan|пропан|suyuqlantirilgan gaz|сжиженный gaz|gaz|газ)", ["сжиженный газ"], "Сжиженный газ"),
     (r"(?:armatur|арматур)", ["арматура"], "Арматура стальная"),
     (r"(?:paxta yog\'?i|yog\'?|moy|масло хлопков|масло)", ["масло хлопковое", "масло"], "Масло хлопковое"),
     (r"(?:polietilen|полиэтилен)", ["полиэтилен"], "Полиэтилен"),
@@ -63,13 +73,13 @@ def detect_language(text: str) -> str:
     uz_words = [
         "narxi", "qancha", "bitim", "shartnoma", "haqida", "qayerda",
         "kim", "kursi", "yillik", "bo'yicha", "sotuvchi", "xaridor",
-        "ma'lumot", "tovar", "holati", "bekor", "eng", "yirik"
+        "ma'lumot", "tovar", "holati", "bekor", "eng", "yirik", "salom"
     ]
     ru_words = [
         "сделка", "сделки", "сделку", "контракт", "контракта", "цена",
         "цены", "сколько", "информация", "где", "кто", "курс", "года",
         "по", "продавец", "продавцов", "покупатель", "данные", "товар",
-        "товары", "статус", "отменен", "рублей", "доллар", "расскажи"
+        "товары", "статус", "отменен", "рублей", "доллар", "расскажи", "привет"
     ]
 
     uz_word_score = sum(1 for m in uz_words if m in text_lower)
@@ -173,6 +183,139 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
                     "response_text": AntiHallucinationGuardrail.get_not_found_response(lang),
                     "raw_data": None
                 }
+
+    # ----------------------------------------------------
+    # 0.3 GREETINGS & POLITENESS (Salom, Assalomu alaykum, Privet)
+    # ----------------------------------------------------
+    has_specific_entity = (
+        extract_commodity(text) is not None or
+        re.search(r"\b(BK\d{3})\b", text, re.IGNORECASE) or
+        re.search(r"\b(\d{6})\b", text) or
+        re.search(r"\b(\d{9})\b", text) or
+        re.search(r"(?:shartnoma|kontrakt|контракт|договор)", lower) or
+        any(k in lower for k in ["dollar", "доллар", "statistika", "статистик"])
+    )
+
+    greeting_words = [
+        "salom", "assalom", "assalomu alaykum", "assalomalaykum", "salomalaykum",
+        "привет", "здравствуй", "здравствуйте", "добрый день", "доброе утро", "добрый вечер",
+        "qalesiz", "qandaysiz", "privet"
+    ]
+    if any(re.search(rf"\b{re.escape(g)}\b", lower) for g in greeting_words) and not has_specific_entity:
+        resp = GREETING_RESPONSE_UZ if lang == "uz" else GREETING_RESPONSE_RU
+        return {
+            "intent": "greeting",
+            "language": lang,
+            "found": True,
+            "response_text": resp,
+            "raw_data": {"type": "greeting"}
+        }
+
+    # ----------------------------------------------------
+    # 0.4 GRATITUDE & FAREWELLS (Rahmat, Spasibo)
+    # ----------------------------------------------------
+    gratitude_words = [
+        "rahmat", "katta rahmat", "tashakkur", "katta tashakkur", "salomat bo'ling",
+        "спасибо", "большое спасибо", "благодарю", "благодарствую"
+    ]
+    if any(re.search(rf"\b{re.escape(gw)}\b", lower) for gw in gratitude_words) and not has_specific_entity:
+        resp = GRATITUDE_RESPONSE_UZ if lang == "uz" else GRATITUDE_RESPONSE_RU
+        return {
+            "intent": "gratitude",
+            "language": lang,
+            "found": True,
+            "response_text": resp,
+            "raw_data": {"type": "gratitude"}
+        }
+
+    # ----------------------------------------------------
+    # 0.5 CAPABILITIES & HELP (Nima qila olasan, Yordam, Pomosh)
+    # ----------------------------------------------------
+    help_words = [
+        "nima qila olasan", "nima qilasiz", "nimalarni bilasan", "qanday savol",
+        "qanday ishlataman", "yordam", "yo'riqnoma", "ko'rsatma", "что ты умеешь",
+        "как пользоваться", "помощь", "справка", "какие вопросы"
+    ]
+    if any(hw in lower for hw in help_words):
+        resp = MESSAGES[lang]["help"]
+        return {
+            "intent": "help",
+            "language": lang,
+            "found": True,
+            "response_text": resp,
+            "raw_data": {"type": "help"}
+        }
+
+    # ----------------------------------------------------
+    # 0.6 COMMODITY CATALOG & AVAILABLE PRODUCTS
+    # ----------------------------------------------------
+    catalog_words = [
+        "qanday tovarlar", "qaysi tovarlar", "tovarlar ro'yxati", "mahsulotlar ro'yxati",
+        "nimalar sotiladi", "birjada nimalar bor", "qanday mahsulot", "birjada nima bor",
+        "какие товары", "список товаров", "что продается", "какие продукты", "какие товары есть"
+    ]
+    if any(cw in lower for cw in catalog_words):
+        resp = AVAILABLE_PRODUCTS_UZ if lang == "uz" else AVAILABLE_PRODUCTS_RU
+        return {
+            "intent": "available_products",
+            "language": lang,
+            "found": True,
+            "response_text": resp,
+            "raw_data": {"type": "available_products"}
+        }
+
+    # ----------------------------------------------------
+    # 0.7 DATABASE CONTENT INFO
+    # ----------------------------------------------------
+    db_info_words = [
+        "bazada nimalar bor", "baza haqida", "qanday ma'lumotlar bor", "ma'lumotlar bazasi",
+        "что есть в базе", "о базе данных", "какие данные есть"
+    ]
+    if any(dw in lower for dw in db_info_words):
+        resp = DATABASE_INFO_UZ if lang == "uz" else DATABASE_INFO_RU
+        return {
+            "intent": "database_info",
+            "language": lang,
+            "found": True,
+            "response_text": resp,
+            "raw_data": {"type": "database_info"}
+        }
+
+    # ----------------------------------------------------
+    # 0.8 SINGLE-WORD PROMPT CLARIFICATIONS
+    # ----------------------------------------------------
+    cleaned_lower = lower.strip(" ?!,.:;\"'")
+    if cleaned_lower in ["narx", "narxlar", "tsena", "tseny", "цена", "цены", "стоимость"]:
+        resp = (
+            "📊 <b>Tovar narxlari</b>\n\nQaysi tovar narxi qiziqtirmoqda? Masalan: <i>sement narxi</i>, <i>paxta</i>, <i>benzin</i>, <i>shakar</i>, <i>un</i>."
+            if lang == "uz" else
+            "📊 <b>Цены на товары</b>\n\nЦена на какой товар вас интересует? Например: <i>цена на цемент</i>, <i>хлопок</i>, <i>бензин</i>, <i>сахар</i>, <i>мука</i>."
+        )
+        return {"intent": "prompt_product", "language": lang, "found": True, "response_text": resp, "raw_data": None}
+
+    if cleaned_lower in ["bitim", "bitimlar", "sdelka", "sdelki", "сделка", "сделки"]:
+        resp = (
+            "📋 <b>Birja bitimlari</b>\n\nBitim ma'lumotlarini olish uchun 6 xonali bitim raqamini kiriting (masalan: <code>504707</code>)."
+            if lang == "uz" else
+            "📋 <b>Биржевые сделки</b>\n\nДля проверки информации о сделке введите её 6-значный номер (например: <code>504707</code>)."
+        )
+        return {"intent": "prompt_deal", "language": lang, "found": True, "response_text": resp, "raw_data": None}
+
+    if cleaned_lower in ["shartnoma", "shartnomalar", "kontrakt", "kontraktlar", "договор", "договоры", "контракт", "контракты"]:
+        resp = (
+            "📑 <b>Shartnoma kartochkalari</b>\n\nShartnoma shartlarini ko'rish uchun uning raqamini kiriting (masalan: <code>shartnoma 100034</code>)."
+            if lang == "uz" else
+            "📑 <b>Карточки контрактов</b>\n\nДля просмотра условий контракта введите его номер (например: <code>контракт 100034</code>)."
+        )
+        return {"intent": "prompt_contract", "language": lang, "found": True, "response_text": resp, "raw_data": None}
+
+    if cleaned_lower in ["kompaniya", "kompaniyalar", "korxona", "firma", "компания", "компании", "фирма", "stir", "инн"]:
+        resp = (
+            "🏢 <b>Savdo ishtirokchilari</b>\n\nKompaniyaning 9 xonali STIR (INN) raqamini yoki uning rasmiy nomini kiriting."
+            if lang == "uz" else
+            "🏢 <b>Участники торгов</b>\n\nВведите 9-значный ИНН компании или её официальное наименование."
+        )
+        return {"intent": "prompt_company", "language": lang, "found": True, "response_text": resp, "raw_data": None}
 
     # ----------------------------------------------------
     # 1. BROKER CODE: BK001 - BK120

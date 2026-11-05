@@ -63,6 +63,93 @@ OUT_OF_SCOPE_RU = (
     "По темам, не относящимся к биржевой деятельности, информация не предоставляется."
 )
 
+# Conversational responses (Greetings, Gratitude, Catalog, DB Info)
+GREETING_RESPONSE_UZ = (
+    "👋 <b>Assalomu alaykum!</b>\n\n"
+    "O‘zbekiston respublika tovar-xomashyo birjasi (UZEX) spot bitimlari axborot xizmatiga xush kelibsiz.\n\n"
+    "Quyidagi ma'lumotlar bo'yicha savol berishingiz mumkin:\n"
+    "• <b>Bitimlar:</b> <code>504707</code> yoki <code>bitim 100001</code>\n"
+    "• <b>Shartnomalar:</b> <code>shartnoma 100034</code>\n"
+    "• <b>Kompaniyalar:</b> <code>915688255</code> yoki kompaniya nomi\n"
+    "• <b>Tovar narxlari:</b> <i>sement narxi</i>, <i>paxta</i>, <i>benzin</i>, <i>shakar</i>\n"
+    "• <b>Reytinglar:</b> <i>top sotuvchilar</i>, <i>eng yirik xaridorlar</i>, <i>eng qimmat bitim</i>\n"
+    "• <b>Valyuta:</b> <i>dollar kursi</i>\n\n"
+    "Savolingizni erkin matn ko'rinishida yuboring:"
+)
+
+GREETING_RESPONSE_RU = (
+    "👋 <b>Здравствуйте!</b>\n\n"
+    "Добро пожаловать в официальную информационную службу спот-торгов UZEX.\n\n"
+    "Вы можете запросить информацию по следующим разделам:\n"
+    "• <b>Сделки:</b> <code>504707</code> или <code>сделка 100001</code>\n"
+    "• <b>Контракты:</b> <code>контракт 100034</code>\n"
+    "• <b>Компании:</b> <code>915688255</code> или название фирмы\n"
+    "• <b>Цены на товары:</b> <i>цена на цемент</i>, <i>хлопок</i>, <i>бензин</i>, <i>сахар</i>\n"
+    "• <b>Рейтинги:</b> <i>топ продавцов</i>, <i>крупнейшие покупатели</i>, <i>самая крупная сделка</i>\n"
+    "• <b>Валюта:</b> <i>курс доллара</i>\n\n"
+    "Отправьте ваш запрос в виде текста:"
+)
+
+GRATITUDE_RESPONSE_UZ = (
+    "🤝 <b>Arzimaydi!</b>\n\n"
+    "Birja bitimlari, tovar narxlari yoki ishtirokchilar bo'yicha yana savollaringiz bo'lsa, bemalol murojaat qilishingiz mumkin."
+)
+
+GRATITUDE_RESPONSE_RU = (
+    "🤝 <b>Пожалуйста!</b>\n\n"
+    "Если у вас возникнут дополнительные вопросы по биржевым сделкам, ценам или участникам, обращайтесь."
+)
+
+AVAILABLE_PRODUCTS_UZ = (
+    "📦 <b>UZEX BIRJASIDA SAVDO QILINADIGAN ASOSIY TOVARLAR</b>\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "Birja reyestrida quyidagi tovar guruhlari bo'yicha bitimlar mavjud:\n\n"
+    "• <b>Qurilish materiallari:</b> Sement (portlandsement), Armatura, G'isht, Shisha, Gipslar\n"
+    "• <b>Qishloq xo'jaligi:</b> Paxta-xomashyosi, Bug'doy, Un, Paxta shroti\n"
+    "• <b>Oziq-ovqat mahsulotlari:</b> Shakar, O'simlik yog'i (paxta va kungaboqar yog'i)\n"
+    "• <b>Yoqilg'i-energetika:</b> Avtomobil benzini (AI-80, AI-92), Dizel yoqilg'isi, Suyuqlantirilgan gaz, Mazut, Bitum\n"
+    "• <b>Kimyo va polimerlar:</b> Mineral o'g'itlar (Karbamid, Selitra), Polietilen, Polivinilxlorid (PVX), Sulfat kislotasi\n"
+    "• <b>Rangli va qora metallar:</b> Mis katodi, Alyuminiy profillar, Po'lat prokat\n\n"
+    "💡 <i>Istalgan tovar narxi va statistikasini bilish uchun tovar nomini yuboring (masalan: <b>sement narxi</b> yoki <b>benzin narxi</b>).</i>"
+)
+
+AVAILABLE_PRODUCTS_RU = (
+    "📦 <b>ОСНОВНЫЕ ТОВАРЫ, ОБРАЩАЮЩИЕСЯ НА БИРЖЕ UZEX</b>\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "В биржевом реестре представлены сделки по следующим группам товаров:\n\n"
+    "• <b>Строительные материалы:</b> Портландцемент, Стальная арматура, Кирпич, Стекло, Гипс\n"
+    "• <b>Сельское хозяйство:</b> Хлопок-сырец, Пшеница, Мука пшеничная, Хлопковый шрот\n"
+    "• <b>Продовольствие:</b> Сахар белый, Растительное масло (хлопковое, подсолнечное)\n"
+    "• <b>Топливо и энергетика:</b> Автомобильный бензин (АИ-80, АИ-92), Дизтопливо, Сжиженный газ, Мазут, Битум\n"
+    "• <b>Химия и полимеры:</b> Минеральные удобрения (Карбамид, Селитра), Полиэтилен, Поливинилхлорид (ПВХ), Серная кислота\n"
+    "• <b>Цветные и черные металлы:</b> Медный катод, Алюминиевый профиль, Стальной прокат\n\n"
+    "💡 <i>Для просмотра цен и динамики отправьте наименование интересующего товара (например: <b>цена на цемент</b> или <b>бензин</b>).</i>"
+)
+
+DATABASE_INFO_UZ = (
+    "📊 <b>UZEX SPOT SAVDOLARI MA'LUMOTLAR BAZASI HAQIDA</b>\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "Tizim 2022–2026 yillardagi rasmiy spot savdolari reyestriga ulangan:\n\n"
+    "• <b>500 000 ta</b> — birja spot bitimlari\n"
+    "• <b>6 616 ta</b> — ro'yxatdan o'tgan shartnoma kartochkalari\n"
+    "• <b>14 392 ta</b> — akkreditatsiyadan o'tgan savdo ishtirokchilari\n"
+    "• <b>120 ta</b> — rasmiy brokerlik idoralari (BK001–BK120)\n"
+    "• <b>1 765 kunlik</b> — Markaziy bank AQSH dollari rasmiy kurslari\n\n"
+    "🔒 <i>Barcha ma'lumotlar faqat tasdiqlangan rasmiy birja yozuvlariga tayanadi.</i>"
+)
+
+DATABASE_INFO_RU = (
+    "📊 <b>О БАЗЕ ДАННЫХ СПОТ-ТОРГОВ UZEX</b>\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "Система функционирует на основе официального реестра спот-торгов за 2022–2026 гг.:\n\n"
+    "• <b>500 000</b> — биржевых спот-сделок\n"
+    "• <b>6 616</b> — зарегистрированных карточек контрактов\n"
+    "• <b>14 392</b> — аккредитованных участников торгов\n"
+    "• <b>120</b> — брокерских контор (BK001–BK120)\n"
+    "• <b>1 765</b> — ежедневных официальных курсов доллара США\n\n"
+    "🔒 <i>Все данные основаны строго на подтвержденных записях биржи.</i>"
+)
+
 # Status Translations
 DEAL_STATE_TRANSLATIONS = {
     "Новый": {
