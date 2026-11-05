@@ -342,6 +342,7 @@ def build_database():
         "CREATE INDEX idx_deals_region ON deals(region);",
         "CREATE INDEX idx_deals_prod_name ON deals(product_name);",
         "CREATE INDEX idx_deals_prod_num ON deals(product_name, deal_number DESC);",
+        "CREATE INDEX idx_deals_amount_desc ON deals(amount DESC);",
         "CREATE INDEX idx_contracts_seller_inn ON contracts(seller_inn);",
         "CREATE INDEX idx_contracts_category ON contracts(category);",
         "CREATE INDEX idx_contracts_industry ON contracts(industry);",
@@ -478,6 +479,71 @@ def build_database():
     ORDER BY total_uzs DESC
     LIMIT 100;
     """)
+
+    # Fast Product Top Sellers
+    cur.execute("""
+    CREATE TABLE product_top_sellers AS
+    SELECT 
+        d.product_name,
+        d.seller_inn,
+        p.name as seller_name,
+        p.region as seller_region,
+        COUNT(*) as deals_count,
+        SUM(d.amount) as total_uzs,
+        SUM(d.quantity * d.lot) as total_volume,
+        d.unit
+    FROM deals d
+    LEFT JOIN participants p ON d.seller_inn = p.inn
+    GROUP BY d.product_name, d.seller_inn;
+    """)
+    cur.execute("CREATE INDEX idx_pts_prod ON product_top_sellers(product_name);")
+    cur.execute("CREATE INDEX idx_pts_total ON product_top_sellers(total_uzs DESC);")
+
+    # Fast Product Top Buyers
+    cur.execute("""
+    CREATE TABLE product_top_buyers AS
+    SELECT 
+        d.product_name,
+        d.buyer_inn,
+        p.name as buyer_name,
+        p.region as buyer_region,
+        COUNT(*) as deals_count,
+        SUM(d.amount) as total_uzs,
+        SUM(d.quantity * d.lot) as total_volume,
+        d.unit
+    FROM deals d
+    LEFT JOIN participants p ON d.buyer_inn = p.inn
+    GROUP BY d.product_name, d.buyer_inn;
+    """)
+    cur.execute("CREATE INDEX idx_ptb_prod ON product_top_buyers(product_name);")
+    cur.execute("CREATE INDEX idx_ptb_total ON product_top_buyers(total_uzs DESC);")
+
+    # Fast Top Brokers
+    cur.execute("""
+    CREATE TABLE top_brokers_summary AS
+    SELECT 
+        b.broker_code,
+        b.name,
+        b.inn,
+        b.region,
+        (
+            SELECT COUNT(*) FROM deals WHERE seller_broker = b.broker_code OR buyer_broker = b.broker_code
+        ) as deals_count,
+        (
+            SELECT COALESCE(SUM(amount_uzs), 0) FROM deals WHERE seller_broker = b.broker_code OR buyer_broker = b.broker_code
+        ) as total_volume_uzs
+    FROM brokers b
+    ORDER BY total_volume_uzs DESC;
+    """)
+    cur.execute("CREATE INDEX idx_tbs_code ON top_brokers_summary(broker_code);")
+
+    # Add lower-case columns for unicode case-insensitivity
+    for tbl in ["product_summary", "product_top_sellers", "product_top_buyers"]:
+        cur.execute(f"ALTER TABLE {tbl} ADD COLUMN product_name_lower TEXT;")
+        cur.execute(f"SELECT rowid, product_name FROM {tbl};")
+        for r_id, p_name in cur.fetchall():
+            cur.execute(f"UPDATE {tbl} SET product_name_lower = ? WHERE rowid = ?;", (p_name.lower(), r_id))
+        cur.execute(f"CREATE INDEX idx_{tbl}_lower ON {tbl}(product_name_lower);")
 
     conn.commit()
     print(f"Summary tables created in {time.time() - sum_start:.2f}s")

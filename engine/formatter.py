@@ -246,7 +246,7 @@ def format_broker(b: Dict[str, Any], lang: str = "uz") -> str:
             f"🏛 <b>BROKERLIK IDORASI: {b['name']}</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"🏷 <b>Broker kodi:</b> <code>{code}</code>\n"
-            f"🆔 <b>STIR:</b> <code>{b['inn']}</code>\n"
+            f"🆔 <b>STIR:</b> <code>{b.get('inn', '—')}</code>\n"
             f"📍 <b>Hudud:</b> {b['region']}\n\n"
             f"📊 <b>Birja faoliyati:</b>\n"
             f"• Vositachilik qilgan bitimlari: <b>{format_number(b['total_mediated_deals'], 0)} ta</b>\n"
@@ -257,7 +257,7 @@ def format_broker(b: Dict[str, Any], lang: str = "uz") -> str:
             f"🏛 <b>БРОКЕРСКАЯ КОНТОРА: {b['name']}</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"🏷 <b>Код брокера:</b> <code>{code}</code>\n"
-            f"🆔 <b>ИНН:</b> <code>{b['inn']}</code>\n"
+            f"🆔 <b>ИНН:</b> <code>{b.get('inn', '—')}</code>\n"
             f"📍 <b>Регион:</b> {b['region']}\n\n"
             f"📊 <b>Торговые показатели:</b>\n"
             f"• Всего оформлено сделок: <b>{format_number(b['total_mediated_deals'], 0)}</b>\n"
@@ -490,3 +490,127 @@ def format_usd_rate(r: Dict[str, Any], lang: str = "uz") -> str:
             f"🏷 <b>Курс:</b> <b>1 USD = {format_number(r['rate'])} сум</b>\n\n"
             f"ℹ️ <i>Данный курс используется для пересчета экспортных сделок в национальной валюте.</i>"
         )
+
+def format_product_top_sellers(product_name: str, sellers: List[Dict[str, Any]], lang: str = "uz") -> str:
+    """Formats top sellers for a specific commodity."""
+    is_uz = (lang == "uz")
+    if is_uz:
+        lines = [
+            f"🏆 <b>TOVAR BO'YICHA YIRIK SOTUVCHILAR: {product_name.upper()}</b>",
+            f"━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, s in enumerate(sellers, 1):
+            name = s.get("seller_name") or f"STIR {s.get('seller_inn')}"
+            lines.append(
+                f"<b>{idx}. {name}</b>\n"
+                f"   STIR: <code>{s['seller_inn']}</code> | {s.get('seller_region', '')}\n"
+                f"   Bitimlar: {format_number(s['deals_count'], 0)} ta | Aylanma: <b>{format_number(s['total_uzs'])} so'm</b>\n"
+            )
+        return "\n".join(lines)
+    else:
+        lines = [
+            f"🏆 <b>КРУПНЕЙШИЕ ПРОДАВЦЫ ТОВАРА: {product_name.upper()}</b>",
+            f"━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, s in enumerate(sellers, 1):
+            name = s.get("seller_name") or f"ИНН {s.get('seller_inn')}"
+            lines.append(
+                f"<b>{idx}. {name}</b>\n"
+                f"   ИНН: <code>{s['seller_inn']}</code> | {s.get('seller_region', '')}\n"
+                f"   Сделок: {format_number(s['deals_count'], 0)} | Оборот: <b>{format_number(s['total_uzs'])} сум</b>\n"
+            )
+        return "\n".join(lines)
+
+def format_product_top_buyers(product_name: str, buyers: List[Dict[str, Any]], lang: str = "uz") -> str:
+    """Formats top buyers for a specific commodity."""
+    is_uz = (lang == "uz")
+    if is_uz:
+        lines = [
+            f"🛒 <b>TOVAR BO'YICHA YIRIK XARIDORLAR: {product_name.upper()}</b>",
+            f"━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, b in enumerate(buyers, 1):
+            name = b.get("buyer_name") or f"STIR {b.get('buyer_inn')}"
+            lines.append(
+                f"<b>{idx}. {name}</b>\n"
+                f"   STIR: <code>{b['buyer_inn']}</code> | {b.get('buyer_region', '')}\n"
+                f"   Bitimlar: {format_number(b['deals_count'], 0)} ta | Xarid: <b>{format_number(b['total_uzs'])} so'm</b>\n"
+            )
+        return "\n".join(lines)
+    else:
+        lines = [
+            f"🛒 <b>КРУПНЕЙШИЕ ПОКУПАТЕЛИ ТОВАРА: {product_name.upper()}</b>",
+            f"━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, b in enumerate(buyers, 1):
+            name = b.get("buyer_name") or f"ИНН {b.get('buyer_inn')}"
+            lines.append(
+                f"<b>{idx}. {name}</b>\n"
+                f"   ИНН: <code>{b['buyer_inn']}</code> | {b.get('buyer_region', '')}\n"
+                f"   Сделок: {format_number(b['deals_count'], 0)} | Закупки: <b>{format_number(b['total_uzs'])} сум</b>\n"
+            )
+        return "\n".join(lines)
+
+def format_extreme_deal(d: Dict[str, Any], extreme_type: str = "max_amount", lang: str = "uz") -> str:
+    """Formats the largest or most extreme trade."""
+    is_uz = (lang == "uz")
+    deal_num = d["deal_number"]
+    title_uz = "РЕКОРД БИТИМ: ЭНГ ЙИРИК БИРЖА БИТИМИ" if extreme_type == "max_amount" else "БИРЖА БИТИМИ"
+    title_ru = "РЕКОРДНАЯ СДЕЛКА: КРУПНЕЙШАЯ НА БИРЖЕ" if extreme_type == "max_amount" else "БИРЖЕВАЯ СДЕЛКА"
+
+    if is_uz:
+        return (
+            f"💎 <b>{title_uz} № {deal_num}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📅 <b>Sana:</b> {d['deal_date']}\n"
+            f"📦 <b>Mahsulot:</b> {d['product_name']}\n"
+            f"💰 <b>Bitim summasi:</b> <b>{format_number(d['amount'])} so'm</b>\n"
+            f"🏷 <b>Birlik narxi:</b> {format_number(d['unit_price'])} so'm/{d.get('unit', '')}\n"
+            f"⚖️ <b>Hajmi:</b> {format_number(d['quantity'] * d.get('lot', 1))} {d.get('unit', '')}\n"
+            f"📍 <b>Hudud:</b> {d['region']}\n\n"
+            f"🏢 <b>Sotuvchi:</b> {d.get('seller_name') or d['seller_inn']} (STIR: <code>{d['seller_inn']}</code>)\n"
+            f"🛒 <b>Xaridor:</b> {d.get('buyer_name') or d['buyer_inn']} (STIR: <code>{d['buyer_inn']}</code>)\n"
+            f"📊 <b>Holati:</b> {d.get('deal_state', '')}"
+        )
+    else:
+        return (
+            f"💎 <b>{title_ru} № {deal_num}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📅 <b>Дата:</b> {d['deal_date']}\n"
+            f"📦 <b>Товар:</b> {d['product_name']}\n"
+            f"💰 <b>Сумма сделки:</b> <b>{format_number(d['amount'])} сум</b>\n"
+            f"🏷 <b>Цена за единицу:</b> {format_number(d['unit_price'])} сум/{d.get('unit', '')}\n"
+            f"⚖️ <b>Объем:</b> {format_number(d['quantity'] * d.get('lot', 1))} {d.get('unit', '')}\n"
+            f"📍 <b>Регион:</b> {d['region']}\n\n"
+            f"🏢 <b>Продавец:</b> {d.get('seller_name') or d['seller_inn']} (ИНН: <code>{d['seller_inn']}</code>)\n"
+            f"🛒 <b>Покупатель:</b> {d.get('buyer_name') or d['buyer_inn']} (ИНН: <code>{d['buyer_inn']}</code>)\n"
+            f"📊 <b>Статус:</b> {d.get('deal_state', '')}"
+        )
+
+def format_top_brokers(brokers: List[Dict[str, Any]], lang: str = "uz") -> str:
+    """Formats top brokers leaderboard."""
+    is_uz = (lang == "uz")
+    if is_uz:
+        lines = [
+            f"🏛 <b>ENG YIRIK BROKERLIK IDORALARI</b>",
+            f"━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, b in enumerate(brokers, 1):
+            lines.append(
+                f"<b>{idx}. {b['name']}</b>\n"
+                f"   Kodi: <code>{b['broker_code']}</code> | {b['region']}\n"
+                f"   Bitimlar: {format_number(b['deals_count'], 0)} ta | Hajm: <b>{format_number(b['total_volume_uzs'])} so'm</b>\n"
+            )
+        return "\n".join(lines)
+    else:
+        lines = [
+            f"🏛 <b>ТОП БРОКЕРСКИХ КОНТОР ПО ОБОРОТУ</b>",
+            f"━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, b in enumerate(brokers, 1):
+            lines.append(
+                f"<b>{idx}. {b['name']}</b>\n"
+                f"   Код: <code>{b['broker_code']}</code> | {b['region']}\n"
+                f"   Сделок: {format_number(b['deals_count'], 0)} | Оборот: <b>{format_number(b['total_volume_uzs'])} сум</b>\n"
+            )
+        return "\n".join(lines)

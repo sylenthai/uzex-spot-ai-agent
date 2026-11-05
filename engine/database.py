@@ -11,6 +11,7 @@ from config import DB_PATH
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.create_function("py_lower", 1, lambda s: s.lower() if s is not None else "")
     return conn
 
 def init_user_settings_table():
@@ -213,27 +214,36 @@ def search_participants_by_name(query_str: str, limit: int = 5) -> List[Dict[str
         return [dict(r) for r in cur.fetchall()]
 
 def get_broker_by_code(code: str) -> Optional[Dict[str, Any]]:
-    """Retrieves broker details and mediated deal stats in ~2ms."""
+    """Retrieves broker details and mediated deal stats in < 1ms."""
     code_str = code.strip().upper()
     with get_connection() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT * FROM brokers WHERE UPPER(broker_code) = ?;", (code_str,))
+        cur.execute("SELECT * FROM top_brokers_summary WHERE UPPER(broker_code) = ?;", (code_str,))
         row = cur.fetchone()
         if not row:
-            return None
+            cur.execute("SELECT * FROM brokers WHERE UPPER(broker_code) = ?;", (code_str,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            res["total_mediated_deals"] = 0
+            res["total_volume_uzs"] = 0
+            return res
         res = dict(row)
-
-        cur.execute("""
-            SELECT 
-                COUNT(*) as total_mediated_deals,
-                COALESCE(SUM(amount_uzs), 0) as total_volume_uzs
-            FROM deals
-            WHERE seller_broker = ? OR buyer_broker = ?;
-        """, (code_str, code_str))
-        b_stats = cur.fetchone()
-        res["total_mediated_deals"] = b_stats["total_mediated_deals"]
-        res["total_volume_uzs"] = b_stats["total_volume_uzs"]
+        res["total_mediated_deals"] = res.get("deals_count", 0)
         return res
+
+def get_top_brokers(limit: int = 5) -> List[Dict[str, Any]]:
+    """Retrieves top brokers by mediated volume in < 1ms."""
+    with get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT broker_code, name, region, deals_count, total_volume_uzs
+            FROM top_brokers_summary
+            ORDER BY total_volume_uzs DESC
+            LIMIT ?;
+        """, (limit,))
+        return [dict(r) for r in cur.fetchall()]
 
 def get_usd_rate(date_str: str) -> Optional[Dict[str, Any]]:
     """Retrieves USD exchange rate in < 1ms."""
@@ -264,13 +274,14 @@ def get_product_price_stats(product_query: str, year: Optional[int] = None) -> O
     clean_q = re.sub(r"[^\w\s]", "", product_query.strip())
     if not clean_q or len(clean_q) < 2:
         return None
+    lower_q = clean_q.lower()
 
     with get_connection() as conn:
         cur = conn.cursor()
 
-        # Query summary table (<3,000 rows instead of 500,000!)
-        base_sql = "FROM product_summary WHERE product_name LIKE ?"
-        params = [f"%{clean_q}%"]
+        # Query summary table with both lowercase and normal matching (<3,000 rows instead of 500,000!)
+        base_sql = "FROM product_summary WHERE (product_name_lower LIKE ? OR product_name LIKE ?)"
+        params = [f"%{lower_q}%", f"%{clean_q}%"]
         if year:
             base_sql += " AND deal_year = ?"
             params.append(year)
@@ -306,10 +317,10 @@ def get_product_price_stats(product_query: str, year: Optional[int] = None) -> O
                 MAX(max_price) as max_price,
                 SUM(total_volume) as total_volume
             FROM product_summary
-            WHERE product_name LIKE ?
+            WHERE (product_name_lower LIKE ? OR product_name LIKE ?)
             GROUP BY deal_year
             ORDER BY deal_year ASC;
-        """, [f"%{clean_q}%"])
+        """, [f"%{lower_q}%", f"%{clean_q}%"])
         res["yearly_trend"] = [dict(r) for r in cur.fetchall()]
 
         # Latest deal using optimal composite index (product_name, deal_number DESC)
@@ -325,16 +336,100 @@ def get_product_price_stats(product_query: str, year: Optional[int] = None) -> O
             cur.execute("""
                 SELECT deal_number, deal_date, product_name, unit_price, quantity, lot, unit, amount, region
                 FROM deals
-                WHERE product_name LIKE ?
+                WHERE (product_name LIKE ? OR py_lower(product_name) LIKE ?)
                 ORDER BY deal_number DESC
                 LIMIT 1;
-            """, [f"%{clean_q}%"])
+            """, [f"%{clean_q}%", f"%{lower_q}%"])
             latest = cur.fetchone()
 
         if latest:
             res["latest_deal"] = dict(latest)
 
         return res
+
+def get_top_sellers_by_product(product_term: str, limit: int = 5) -> List[Dict[str, Any]]:
+    """Retrieves top sellers for a specific commodity in < 2ms."""
+    clean_q = re.sub(r"[^\w\s]", "", product_term.strip()).lower()
+    if not clean_q:
+        return []
+    with get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT 
+                seller_inn,
+                seller_name,
+                seller_region,
+                product_name,
+                unit,
+                SUM(deals_count) as deals_count,
+                SUM(total_uzs) as total_uzs,
+                SUM(total_volume) as total_volume
+            FROM product_top_sellers
+            WHERE (product_name_lower LIKE ? OR product_name LIKE ?)
+            GROUP BY seller_inn
+            ORDER BY total_uzs DESC
+            LIMIT ?;
+        """, (f"%{clean_q}%", f"%{product_term}%", limit))
+        return [dict(r) for r in cur.fetchall()]
+
+def get_top_buyers_by_product(product_term: str, limit: int = 5) -> List[Dict[str, Any]]:
+    """Retrieves top buyers for a specific commodity in < 2ms."""
+    clean_q = re.sub(r"[^\w\s]", "", product_term.strip()).lower()
+    if not clean_q:
+        return []
+    with get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT 
+                buyer_inn,
+                buyer_name,
+                buyer_region,
+                product_name,
+                unit,
+                SUM(deals_count) as deals_count,
+                SUM(total_uzs) as total_uzs,
+                SUM(total_volume) as total_volume
+            FROM product_top_buyers
+            WHERE (product_name_lower LIKE ? OR product_name LIKE ?)
+            GROUP BY buyer_inn
+            ORDER BY total_uzs DESC
+            LIMIT ?;
+        """, (f"%{clean_q}%", f"%{product_term}%", limit))
+        return [dict(r) for r in cur.fetchall()]
+
+def get_extreme_deal(extreme_type: str = "max_amount", product_term: Optional[str] = None, year: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    """Retrieves the largest or smallest deal in < 2ms."""
+    with get_connection() as conn:
+        cur = conn.cursor()
+        where_clauses = ["d.amount > 0"]
+        params = []
+        if product_term:
+            clean_p = product_term.strip()
+            where_clauses.append("(d.product_name LIKE ? OR py_lower(d.product_name) LIKE ?)")
+            params.extend([f"%{clean_p}%", f"%{clean_p.lower()}%"])
+        if year:
+            where_clauses.append("d.deal_year = ?")
+            params.append(year)
+
+        where_sql = " AND ".join(where_clauses)
+        order_clause = "d.amount DESC" if extreme_type == "max_amount" else ("d.amount ASC" if extreme_type == "min_amount" else "d.unit_price DESC")
+
+        sql = f"""
+            SELECT 
+                d.deal_number, d.deal_date, d.product_name, d.amount, d.quantity, d.lot, d.unit, 
+                d.unit_price, d.region, d.deal_state, d.auction_type,
+                d.seller_inn, p1.name as seller_name,
+                d.buyer_inn, p2.name as buyer_name
+            FROM deals d
+            LEFT JOIN participants p1 ON d.seller_inn = p1.inn
+            LEFT JOIN participants p2 ON d.buyer_inn = p2.inn
+            WHERE {where_sql}
+            ORDER BY {order_clause}
+            LIMIT 1;
+        """
+        cur.execute(sql, params)
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 def get_top_sellers(limit: int = 5, year: Optional[int] = None) -> List[Dict[str, Any]]:
     """Retrieves top sellers in < 1ms."""

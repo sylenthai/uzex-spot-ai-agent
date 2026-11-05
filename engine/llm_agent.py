@@ -46,6 +46,17 @@ ABSOLUTE RULES (FAILURE TO COMPLY CAUSES DISQUALIFICATION):
    - Answer politely in the user's language (Uzbek or Russian).
 """
 
+def format_markdown_to_html(text: str) -> str:
+    """Converts common Markdown bold/code to Telegram HTML format."""
+    if not text:
+        return ""
+    import re
+    # Convert **bold** to <b>bold</b>
+    text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
+    # Convert `code` to <code>code</code>
+    text = re.sub(r"`([^`]+?)`", r"<code>\1</code>", text)
+    return text
+
 def generate_llm_response(user_query: str, raw_data: Optional[Dict[str, Any]], lang: str = "uz") -> Optional[str]:
     """
     Calls DeepSeek API with strict factual grounding.
@@ -69,8 +80,9 @@ def generate_llm_response(user_query: str, raw_data: Optional[Dict[str, Any]], l
         f"USER_QUERY: {user_query}\n"
         f"LANGUAGE: {lang}\n"
         f"VERIFIED_CONTEXT_JSON:\n{json.dumps(raw_data, ensure_ascii=False, indent=2)}\n\n"
-        f"Task: Format the verified facts from the JSON above into a professional, clear response in {lang}. "
-        f"Do NOT invent or add any information not present in the JSON."
+        f"Task: Answer the user's question clearly and conversationally in {lang} using ONLY the verified facts from VERIFIED_CONTEXT_JSON. "
+        f"Format with Telegram HTML tags (<b>, <i>, <code>). "
+        f"CRITICAL: Do NOT invent, assume, or add any numbers, companies, or commodities not in the JSON. Never reveal your model name."
     )
 
     payload = {
@@ -89,11 +101,10 @@ def generate_llm_response(user_query: str, raw_data: Optional[Dict[str, Any]], l
             if resp.status_code == 200:
                 result_json = resp.json()
                 content = result_json["choices"][0]["message"]["content"].strip()
-                # Safety check: ensure LLM did not leak model name
                 lower_content = content.lower()
                 if "deepseek" in lower_content or "openai" in lower_content or "gpt" in lower_content:
                     return IDENTITY_RESPONSE_UZ if lang == "uz" else IDENTITY_RESPONSE_RU
-                return content
+                return format_markdown_to_html(content)
             else:
                 logger.warning(f"DeepSeek API error {resp.status_code}: {resp.text}")
                 return None
@@ -120,8 +131,9 @@ async def generate_llm_response_async(user_query: str, raw_data: Optional[Dict[s
         f"USER_QUERY: {user_query}\n"
         f"LANGUAGE: {lang}\n"
         f"VERIFIED_CONTEXT_JSON:\n{json.dumps(raw_data, ensure_ascii=False, indent=2)}\n\n"
-        f"Task: Format the verified facts from the JSON above into a professional, clear response in {lang}. "
-        f"Do NOT invent or add any information not present in the JSON."
+        f"Task: Answer the user's question clearly and conversationally in {lang} using ONLY the verified facts from VERIFIED_CONTEXT_JSON. "
+        f"Format with Telegram HTML tags (<b>, <i>, <code>). "
+        f"CRITICAL: Do NOT invent, assume, or add any numbers, companies, or commodities not in the JSON. Never reveal your model name."
     )
 
     payload = {
@@ -143,7 +155,7 @@ async def generate_llm_response_async(user_query: str, raw_data: Optional[Dict[s
                 lower_content = content.lower()
                 if "deepseek" in lower_content or "openai" in lower_content or "gpt" in lower_content:
                     return IDENTITY_RESPONSE_UZ if lang == "uz" else IDENTITY_RESPONSE_RU
-                return content
+                return format_markdown_to_html(content)
             else:
                 logger.warning(f"DeepSeek API error {resp.status_code}: {resp.text}")
                 return None

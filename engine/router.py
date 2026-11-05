@@ -17,61 +17,30 @@ from config import (
     OUT_OF_SCOPE_RU
 )
 
-COMMODITY_SYNONYMS = {
-    # Uzbek Latin / variations -> Russian catalog search terms
-    "sement": ["цемент", "портландцемент"],
-    "tsement": ["цемент", "портландцемент"],
-    "shakar": ["сахар", "сахар белый"],
-    "paxta": ["хлопок", "хлопок-сырец"],
-    "paxta-xomashyosi": ["хлопок-сырец"],
-    "bug'doy": ["пшеница"],
-    "bugdoy": ["пшеница"],
-    "un": ["мука", "мука пшеничная"],
-    "benzin": ["бензин", "бензин автомобильный"],
-    "dizel": ["дизельное топливо", "топливо дизельное"],
-    "solyarka": ["топливо дизельное"],
-    "yog'": ["масло хлопковое", "масло"],
-    "yog": ["масло хлопковое", "масло"],
-    "moy": ["масло хлопковое"],
-    "paxta yog'i": ["масло хлопковое"],
-    "gaz": ["сжиженный газ"],
-    "propan": ["сжиженный газ"],
-    "armatura": ["арматура", "арматура стальная"],
-    "polietilen": ["полиэтилен"],
-    "polivinilxlorid": ["поливинилхлорид"],
-    "pvh": ["поливинилхлорид"],
-    "selitra": ["селитра", "аммиачная селитра"],
-    "karbamid": ["карбамид"],
-    "shrot": ["шрот", "шрот хлопковых семян"],
-    "guruch": ["рис", "рис шлифованный"],
-    "alyuminiy": ["алюминий", "профиль алюминиевый"],
-    "po'lat": ["сталь", "лист стальной"],
-    "polat": ["сталь", "лист стальной"],
-    "metall": ["металл", "прокат", "арматура"],
-    "kislota": ["кислота серная", "кислота"],
-
-    # Russian synonyms
-    "цемент": ["цемент", "портландцемент"],
-    "сахар": ["сахар", "сахар белый"],
-    "хлопок": ["хлопок", "хлопок-сырец"],
-    "пшеница": ["пшеница", "пшеница продовольственная"],
-    "мука": ["мука", "мука пшеничная"],
-    "бензин": ["бензин", "бензин автомобильный"],
-    "дизель": ["дизельное топливо", "топливо дизельное"],
-    "солярка": ["топливо дизельное"],
-    "масло": ["масло хлопковое"],
-    "газ": ["сжиженный газ"],
-    "арматура": ["арматура", "арматура стальная"],
-    "полиэтилен": ["полиэтилен"],
-    "поливинилхлорид": ["поливинилхлорид"],
-    "пвх": ["поливинилхлорид"],
-    "селитра": ["аммиачная селитра", "селитра"],
-    "карбамид": ["карбамид"],
-    "шрот": ["шрот", "шрот хлопковых семян"],
-    "рис": ["рис", "рис шлифованный"],
-    "алюминий": ["алюминий", "профиль алюминиевый"],
-    "сталь": ["сталь", "лист стальной"]
-}
+COMMODITY_PATTERNS = [
+    # (regex pattern, Russian db search terms, canonical name)
+    (r"(?:sement|tsement|цемент|портландцемент)", ["портландцемент", "цемент"], "Портландцемент"),
+    (r"(?:paxta|хлопок|хлопк)", ["хлопок", "хлопок-сырец"], "Хлопок"),
+    (r"(?:benzin|аи-?80|аи-?92|бензин)", ["бензин"], "Бензин автомобильный"),
+    (r"(?:bug\'?doy|bugdoy|пшениц)", ["пшеница"], "Пшеница"),
+    (r"(?:un|мука|мук)", ["мука"], "Мука пшеничная"),
+    (r"(?:shakar|сахар)", ["сахар"], "Сахар"),
+    (r"(?:dizel|дизел|solyark|солярк)", ["топливо дизельное", "дизельное топливо"], "Топливо дизельное"),
+    (r"(?:propan|пропан|suyuqlantirilgan gaz|сжиженный газ|gaz|газ)", ["сжиженный газ"], "Сжиженный газ"),
+    (r"(?:armatur|арматур)", ["арматура"], "Арматура стальная"),
+    (r"(?:paxta yog\'?i|yog\'?|moy|масло хлопков|масло)", ["масло хлопковое", "масло"], "Масло хлопковое"),
+    (r"(?:polietilen|полиэтилен)", ["полиэтилен"], "Полиэтилен"),
+    (r"(?:karbamid|карбамид|mochevina|мочевина)", ["карбамид"], "Карбамид"),
+    (r"(?:selitr|селитр)", ["селитра", "аммиачная селитра"], "Аммиачная селитра"),
+    (r"(?:shrot|шрот)", ["шрот"], "Шрот хлопковых семян"),
+    (r"(?:polivinilxlorid|поливинилхлорид|pvh|пвх)", ["поливинилхлорид"], "Поливинилхлорид"),
+    (r"(?:alyuminiy|алюмин)", ["алюмин"], "Алюминиевый профиль"),
+    (r"(?:mis|katod|медн|медь)", ["катод медный", "медь"], "Катод медный"),
+    (r"(?:bitum|битум)", ["битум"], "Битум нефтяной"),
+    (r"(?:shisha|oyna|стекл)", ["стекло"], "Стекло листовое"),
+    (r"(?:g\'?isht|gisht|кирпич)", ["кирпич"], "Кирпич керамический"),
+    (r"(?:kislota|кислот)", ["кислота серная"], "Серная кислота"),
+]
 
 REGIONS_LIST = [
     "toshkent shahri", "toshkent viloyati", "samarqand viloyati", "farg‘ona viloyati",
@@ -85,11 +54,8 @@ REGIONS_LIST = [
 ]
 
 def detect_language(text: str) -> str:
-    """
-    Detects whether the text is primarily Uzbek or Russian.
-    """
+    """Detects whether the text is primarily Uzbek or Russian."""
     text_lower = text.lower()
-
     cyrillic_chars = len(re.findall(r"[а-яё]", text_lower))
     latin_chars = len(re.findall(r"[a-z]", text_lower))
     uz_specific = len(re.findall(r"[ўқғҳ]", text_lower)) + len(re.findall(r"[og][‘']", text_lower))
@@ -130,6 +96,13 @@ def extract_date(text: str) -> Optional[str]:
     match = re.search(r"\b(\d{2}\.\d{2}\.202[2-6])\b", text)
     if match:
         return match.group(1)
+    return None
+
+def extract_commodity(text: str) -> Optional[Tuple[str, List[str]]]:
+    """Returns (canonical_name, [search_terms]) if a known commodity is found in text."""
+    for pattern, search_terms, canonical_name in COMMODITY_PATTERNS:
+        if re.search(pattern, text, re.IGNORECASE):
+            return canonical_name, search_terms
     return None
 
 def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, Any]:
@@ -180,6 +153,26 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
             "response_text": resp,
             "raw_data": None
         }
+
+    # ----------------------------------------------------
+    # 0.2 NON-EXCHANGE ENTITY & TRICK QUERY SHIELD
+    # Catches foreign brands, cryptocurrencies, consumer electronics, precious metals
+    # ----------------------------------------------------
+    fake_asset_triggers = [
+        "apple", "tesla", "google", "microsoft", "amazon", "meta", "samsung",
+        "nvidia", "intel", "iphone", "айфон", "тесла", "биткоин", "bitcoin",
+        "kripto", "крипто", "ethereum", "эфириум", "oltin", "золото", "kumush", "серебро"
+    ]
+    for fat in fake_asset_triggers:
+        if re.search(rf"\b{re.escape(fat)}\b", lower):
+            if not database.search_participants_by_name(fat, limit=1):
+                return {
+                    "intent": "unknown",
+                    "language": lang,
+                    "found": False,
+                    "response_text": AntiHallucinationGuardrail.get_not_found_response(lang),
+                    "raw_data": None
+                }
 
     # ----------------------------------------------------
     # 1. BROKER CODE: BK001 - BK120
@@ -320,98 +313,212 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
                 }
 
     # ----------------------------------------------------
-    # 6. TOP SELLERS & TOP BUYERS
+    # 6. COMMODITY-SPECIFIC QUERIES (Sellers, Buyers, Prices)
     # ----------------------------------------------------
-    if any(k in lower for k in ["top xaridor", "eng yirik xaridor", "топ покупател", "крупнейшие покупател"]):
+    commodity_match = extract_commodity(text)
+    if commodity_match:
+        canonical_name, search_terms = commodity_match
+
+        # 6.1 Top sellers of this specific commodity
+        seller_signals = [
+            "sotuvchi", "kim sotgan", "kim ko'p sotgan", "ko'p sotgan", "sotdi", "sotgan",
+            "sotuvchilari", "продал", "продавец", "продавцы", "кто продает", "кто продал",
+            "лидеры продаж", "поставщики", "kim sotadi"
+        ]
+        if any(s in lower for s in seller_signals):
+            for t in search_terms:
+                prod_sellers = database.get_top_sellers_by_product(t, limit=5)
+                if prod_sellers:
+                    resp_text = formatter.format_product_top_sellers(canonical_name, prod_sellers, lang)
+                    llm_text = llm_agent.generate_llm_response(text, prod_sellers, lang=lang)
+                    return {
+                        "intent": "product_top_sellers",
+                        "language": lang,
+                        "found": True,
+                        "response_text": llm_text or resp_text,
+                        "raw_data": prod_sellers,
+                        "entity_type": "product_sellers",
+                        "entity_value": canonical_name
+                    }
+
+        # 6.2 Top buyers of this specific commodity
+        buyer_signals = [
+            "xaridor", "kim sotib olgan", "kim olgan", "sotib olgan", "oldi", "xaridorlari",
+            "купил", "покупатель", "покупатели", "кто покупает", "кто купил", "закупки"
+        ]
+        if any(b in lower for b in buyer_signals):
+            for t in search_terms:
+                prod_buyers = database.get_top_buyers_by_product(t, limit=5)
+                if prod_buyers:
+                    resp_text = formatter.format_product_top_buyers(canonical_name, prod_buyers, lang)
+                    llm_text = llm_agent.generate_llm_response(text, prod_buyers, lang=lang)
+                    return {
+                        "intent": "product_top_buyers",
+                        "language": lang,
+                        "found": True,
+                        "response_text": llm_text or resp_text,
+                        "raw_data": prod_buyers,
+                        "entity_type": "product_buyers",
+                        "entity_value": canonical_name
+                    }
+
+        # 6.3 Price statistics & dynamics of this commodity
+        for term in search_terms:
+            p_stats = database.get_product_price_stats(term, year=year)
+            if p_stats:
+                resp_text = formatter.format_product_stats(p_stats, lang)
+                llm_text = llm_agent.generate_llm_response(text, p_stats, lang=lang)
+                return {
+                    "intent": "product_price",
+                    "language": lang,
+                    "found": True,
+                    "response_text": llm_text or resp_text,
+                    "raw_data": p_stats,
+                    "entity_type": "product",
+                    "entity_value": term
+                }
+
+    # ----------------------------------------------------
+    # 7. EXTREME TRADES (Largest / Smallest Deal)
+    # ----------------------------------------------------
+    if any(k in lower for k in [
+        "eng qimmat bitim", "eng yirik bitim", "eng katta bitim", "rekord bitim",
+        "eng katta savdo", "самая крупная сделка", "самая дорогая сделка", "рекордная сделка"
+    ]):
+        ext_deal = database.get_extreme_deal("max_amount", year=year)
+        if ext_deal:
+            resp_text = formatter.format_extreme_deal(ext_deal, "max_amount", lang)
+            llm_text = llm_agent.generate_llm_response(text, ext_deal, lang=lang)
+            return {
+                "intent": "extreme_deal",
+                "language": lang,
+                "found": True,
+                "response_text": llm_text or resp_text,
+                "raw_data": ext_deal
+            }
+
+    if any(k in lower for k in [
+        "eng arzon bitim", "eng kichik bitim", "минимальная сделка", "самая дешевая сделка"
+    ]):
+        ext_deal = database.get_extreme_deal("min_amount", year=year)
+        if ext_deal:
+            resp_text = formatter.format_extreme_deal(ext_deal, "min_amount", lang)
+            llm_text = llm_agent.generate_llm_response(text, ext_deal, lang=lang)
+            return {
+                "intent": "extreme_deal",
+                "language": lang,
+                "found": True,
+                "response_text": llm_text or resp_text,
+                "raw_data": ext_deal
+            }
+
+    # ----------------------------------------------------
+    # 8. TOP BROKERS
+    # ----------------------------------------------------
+    if any(k in lower for k in ["top broker", "eng yirik broker", "faol broker", "brokerlar", "топ брокер", "крупнейшие брокер", "активные брокер"]):
+        top_br = database.get_top_brokers(limit=5)
+        if top_br:
+            resp_text = formatter.format_top_brokers(top_br, lang)
+            llm_text = llm_agent.generate_llm_response(text, top_br, lang=lang)
+            return {
+                "intent": "top_brokers",
+                "language": lang,
+                "found": True,
+                "response_text": llm_text or resp_text,
+                "raw_data": top_br
+            }
+
+    # ----------------------------------------------------
+    # 9. GENERAL TOP BUYERS & SELLERS
+    # ----------------------------------------------------
+    if any(k in lower for k in [
+        "top xaridor", "eng yirik xaridor", "eng faol xaridor", "faol xaridor",
+        "kim ko'p sotib olgan", "xaridorlar reytingi", "yirik xaridorlar",
+        "топ покупател", "крупнейшие покупател", "активные покупател", "кто больше купил", "лидеры покупок"
+    ]):
         top_buyers = database.get_top_buyers(limit=5, year=year)
         if top_buyers:
+            resp_text = formatter.format_top_buyers(top_buyers, lang, year)
+            llm_text = llm_agent.generate_llm_response(text, top_buyers, lang=lang)
             return {
                 "intent": "top_buyers",
                 "language": lang,
                 "found": True,
-                "response_text": formatter.format_top_buyers(top_buyers, lang, year),
+                "response_text": llm_text or resp_text,
                 "raw_data": top_buyers
             }
 
-    if any(k in lower for k in ["top sotuvchi", "eng yirik sotuvchi", "топ продавц", "крупнейшие продавц"]):
+    if any(k in lower for k in [
+        "top sotuvchi", "eng yirik sotuvchi", "eng faol sotuvchi", "faol sotuvchi",
+        "kim ko'p sotgan", "sotuvchilar reytingi", "yirik sotuvchilar",
+        "топ продавц", "крупнейшие продавц", "активные продавц", "кто больше продал", "лидеры продаж"
+    ]):
         top_sellers = database.get_top_sellers(limit=5, year=year)
         if top_sellers:
+            resp_text = formatter.format_top_sellers(top_sellers, lang, year)
+            llm_text = llm_agent.generate_llm_response(text, top_sellers, lang=lang)
             return {
                 "intent": "top_sellers",
                 "language": lang,
                 "found": True,
-                "response_text": formatter.format_top_sellers(top_sellers, lang, year),
+                "response_text": llm_text or resp_text,
                 "raw_data": top_sellers
             }
 
     # ----------------------------------------------------
-    # 7. TOP PRODUCTS
+    # 10. TOP PRODUCTS
     # ----------------------------------------------------
-    if any(k in lower for k in ["top tovar", "eng ko'p sotilgan", "топ товар", "востребованн"]):
+    if any(k in lower for k in ["top tovar", "eng ko'p sotilgan", "eng talabgir", "talab yuqori", "ommabop tovar", "топ товар", "востребованн", "самые продаваемые"]):
         top_prods = database.get_top_products(limit=5, year=year)
         if top_prods:
+            resp_text = formatter.format_top_products(top_prods, lang, year)
+            llm_text = llm_agent.generate_llm_response(text, top_prods, lang=lang)
             return {
                 "intent": "top_products",
                 "language": lang,
                 "found": True,
-                "response_text": formatter.format_top_products(top_prods, lang, year),
+                "response_text": llm_text or resp_text,
                 "raw_data": top_prods
             }
 
     # ----------------------------------------------------
-    # 8. GENERAL OVERVIEW & REGIONAL STATS
+    # 11. GENERAL OVERVIEW & REGIONAL STATS
     # ----------------------------------------------------
     for reg in REGIONS_LIST:
         if reg in lower:
             reg_stats = database.get_region_stats(reg, year=year)
             if reg_stats:
+                resp_text = formatter.format_region_stats(reg_stats, lang)
+                llm_text = llm_agent.generate_llm_response(text, reg_stats, lang=lang)
                 return {
                     "intent": "regional_stats",
                     "language": lang,
                     "found": True,
-                    "response_text": formatter.format_region_stats(reg_stats, lang),
+                    "response_text": llm_text or resp_text,
                     "raw_data": reg_stats
                 }
 
     if any(k in lower for k in ["statistika", "umumiy ko'rsatkich", "общие показатели", "статистик"]):
         stats = database.get_general_stats(year=year)
+        resp_text = formatter.format_market_overview(stats, lang)
+        llm_text = llm_agent.generate_llm_response(text, stats, lang=lang)
         return {
             "intent": "general_stats",
             "language": lang,
             "found": True,
-            "response_text": formatter.format_market_overview(stats, lang),
+            "response_text": llm_text or resp_text,
             "raw_data": stats
         }
 
     # ----------------------------------------------------
-    # 9. COMMODITY / PRODUCT PRICE DYNAMICS
+    # 12. FALLBACK CANDIDATE EXTRACTION (Participant or Product)
     # ----------------------------------------------------
-    matched_search_terms = []
-    for syn_key, search_terms in COMMODITY_SYNONYMS.items():
-        if re.search(rf"\b{re.escape(syn_key)}\b", lower):
-            matched_search_terms.extend(search_terms)
-
-    for term in matched_search_terms:
-        p_stats = database.get_product_price_stats(term, year=year)
-        if p_stats:
-            resp_text = formatter.format_product_stats(p_stats, lang)
-            return {
-                "intent": "product_price",
-                "language": lang,
-                "found": True,
-                "response_text": resp_text,
-                "raw_data": p_stats,
-                "entity_type": "product",
-                "entity_value": term
-            }
-
-    # Candidate extraction
     cleaned_candidate = text
     for stop in [
         "narxi", "narx", "qancha", "haqida", "qanday", "ber", "o'rtacha", "bo'yicha",
         "цена", "цены", "стоимость", "какая", "средняя", "на", "по", "в", "год", "года",
         "yil", "yili", "2022", "2023", "2024", "2025", "2026", "elektromobili", "kompaniyasi",
-        "savdo", "qilgan", "sotdi", "oldi"
+        "savdo", "qilgan", "sotdi", "oldi", "nima", "qaysi", "kim", "qilingan"
     ]:
         cleaned_candidate = re.sub(rf"\b{stop}\b", "", cleaned_candidate, flags=re.IGNORECASE)
     cleaned_candidate = cleaned_candidate.strip(" ?!,.:;\"'")
@@ -419,11 +526,13 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
     if len(cleaned_candidate) >= 3:
         p_stats = database.get_product_price_stats(cleaned_candidate, year=year)
         if p_stats:
+            resp_text = formatter.format_product_stats(p_stats, lang)
+            llm_text = llm_agent.generate_llm_response(text, p_stats, lang=lang)
             return {
                 "intent": "product_price",
                 "language": lang,
                 "found": True,
-                "response_text": formatter.format_product_stats(p_stats, lang),
+                "response_text": llm_text or resp_text,
                 "raw_data": p_stats,
                 "entity_type": "product",
                 "entity_value": cleaned_candidate
@@ -433,11 +542,13 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
         if matched_participants:
             if len(matched_participants) == 1:
                 p_full = database.get_participant_by_inn(matched_participants[0]["inn"])
+                resp_text = formatter.format_participant(p_full, lang)
+                llm_text = llm_agent.generate_llm_response(text, p_full, lang=lang)
                 return {
                     "intent": "participant_lookup",
                     "language": lang,
                     "found": True,
-                    "response_text": formatter.format_participant(p_full, lang),
+                    "response_text": llm_text or resp_text,
                     "raw_data": p_full,
                     "entity_type": "company",
                     "entity_value": cleaned_candidate
@@ -461,7 +572,7 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
                 }
 
     # ----------------------------------------------------
-    # 10. STRICT ZERO-HALLUCINATION FALLBACK
+    # 13. STRICT ZERO-HALLUCINATION FALLBACK
     # ----------------------------------------------------
     # When no entity is found in our database, the agent strictly
     # returns the zero-hallucination refusal message WITHOUT mentioning

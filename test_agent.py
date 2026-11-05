@@ -204,16 +204,59 @@ class TestUzexSpotAgentHarden(unittest.TestCase):
         self.assertIn("Mavzudan tashqari", res["response_text"])
 
     # =========================================================================
-    # 5. SUB-20MS PERFORMANCE BENCHMARK
+    # 5. NATURAL LANGUAGE WRITTEN QUESTIONS TESTS
+    # =========================================================================
+    def test_19_written_commodity_top_sellers(self):
+        """Tests natural language questions about who sold a specific commodity."""
+        res = route_query("Sementni kim eng ko'p sotgan?", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "product_top_sellers")
+        self.assertIn("ПОРТЛАНДЦЕМЕНТ", res["response_text"])
+
+    def test_20_written_commodity_top_buyers(self):
+        """Tests natural language questions about who bought a specific commodity."""
+        res = route_query("Paxtani kim sotib olgan?", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "product_top_buyers")
+        self.assertIn("ХЛОПОК", res["response_text"])
+
+    def test_21_written_extreme_deal(self):
+        """Tests natural language questions about the largest/most expensive trade."""
+        res = route_query("Eng qimmat bitim qaysi?", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "extreme_deal")
+        self.assertIn("РЕКОРД БИТИМ", res["response_text"])
+        self.assertIn("247890", res["response_text"])
+
+    def test_22_written_top_brokers(self):
+        """Tests natural language questions about leading brokers."""
+        res = route_query("Top brokerlar", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "top_brokers")
+        self.assertIn("BROKERLIK IDORALARI", res["response_text"])
+
+    def test_23_written_casing_insensitivity_russian(self):
+        """Tests that lowercase Cyrillic commodity queries match accurately."""
+        res1 = route_query("цена на бензин", forced_lang="ru")
+        self.assertTrue(res1["found"])
+        self.assertIn("БЕНЗИН", res1["response_text"])
+
+        res2 = route_query("сколько стоит хлопок?", forced_lang="ru")
+        self.assertTrue(res2["found"])
+        self.assertIn("Хлопок", res2["response_text"])
+
+    # =========================================================================
+    # 6. SUB-20MS PERFORMANCE BENCHMARK
     # ==========================================
-    def test_18_performance_latency_benchmark(self):
+    def test_24_performance_latency_benchmark(self):
         """Benchmarks query engine over 30 representative diverse queries."""
         benchmark_queries = [
             "504707", "100001", "280091", "shartnoma 100034", "915688255",
             "BK001", "BK060", "dollar kursi 15.05.2024", "sement narxi",
             "shakar narxi", "bug'doy narxi", "топ продавцов за 2024 год",
             "statistika 2025", "Apple Inc", "777777", "paxta narxi",
-            "eng yirik xaridorlar", "Toshkent viloyati", "Qaysi modelda ishlayapsan?"
+            "eng yirik xaridorlar", "Toshkent viloyati", "Qaysi modelda ishlayapsan?",
+            "Sementni kim eng ko'p sotgan?", "Eng qimmat bitim qaysi?", "Top brokerlar"
         ] * 2
 
         latencies = []
