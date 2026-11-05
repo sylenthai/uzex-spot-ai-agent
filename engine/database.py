@@ -266,6 +266,31 @@ def get_latest_usd_rate() -> Optional[Dict[str, Any]]:
             return dict(row)
         return None
 
+def get_usd_rate_by_year(year: int) -> Optional[Dict[str, Any]]:
+    """Retrieves USD exchange rate annual statistics (min, max, avg, start, end) in < 1ms."""
+    year_str = str(year).strip()
+    with get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT 
+                COUNT(*) as count,
+                MIN(rate) as min_rate,
+                MAX(rate) as max_rate,
+                ROUND(AVG(rate), 2) as avg_rate,
+                (SELECT rate FROM usd_rates WHERE substr(rate_date_iso, 1, 4) = ? ORDER BY rate_date_iso ASC LIMIT 1) as start_rate,
+                (SELECT rate_date FROM usd_rates WHERE substr(rate_date_iso, 1, 4) = ? ORDER BY rate_date_iso ASC LIMIT 1) as start_date,
+                (SELECT rate FROM usd_rates WHERE substr(rate_date_iso, 1, 4) = ? ORDER BY rate_date_iso DESC LIMIT 1) as end_rate,
+                (SELECT rate_date FROM usd_rates WHERE substr(rate_date_iso, 1, 4) = ? ORDER BY rate_date_iso DESC LIMIT 1) as end_date
+            FROM usd_rates
+            WHERE substr(rate_date_iso, 1, 4) = ?;
+        """, (year_str, year_str, year_str, year_str, year_str))
+        row = cur.fetchone()
+        if row and row["count"] > 0:
+            res = dict(row)
+            res["year"] = int(year)
+            return res
+        return None
+
 def get_product_price_stats(product_query: str, year: Optional[int] = None) -> Optional[Dict[str, Any]]:
     """
     Sub-millisecond commodity price analytics powered by product_summary table.
@@ -416,7 +441,7 @@ def get_extreme_deal(extreme_type: str = "max_amount", product_term: Optional[st
 
         sql = f"""
             SELECT 
-                d.deal_number, d.deal_date, d.product_name, d.amount, d.quantity, d.lot, d.unit, 
+                d.deal_number, d.contract_number, d.deal_date, d.product_name, d.amount, d.quantity, d.lot, d.unit, 
                 d.unit_price, d.region, d.deal_state, d.auction_type,
                 d.seller_inn, p1.name as seller_name,
                 d.buyer_inn, p2.name as buyer_name
@@ -430,6 +455,31 @@ def get_extreme_deal(extreme_type: str = "max_amount", product_term: Optional[st
         cur.execute(sql, params)
         row = cur.fetchone()
         return dict(row) if row else None
+
+def get_top_contracts(limit: int = 5) -> List[Dict[str, Any]]:
+    """Retrieves top contracts by trading volume in < 1ms."""
+    with get_connection() as conn:
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT contract_number, product_name, deals_count, total_uzs, total_volume, unit, region, seller_name
+                FROM top_contracts_summary
+                ORDER BY total_uzs DESC
+                LIMIT ?;
+            """, (limit,))
+            return [dict(r) for r in cur.fetchall()]
+        except Exception:
+            # Fallback if summary table does not exist
+            cur.execute("""
+                SELECT 
+                    d.contract_number, d.product_name, count(*) as deals_count, 
+                    sum(d.amount) as total_uzs, sum(d.quantity * d.lot) as total_volume, d.unit, d.region
+                FROM deals d
+                GROUP BY d.contract_number
+                ORDER BY total_uzs DESC
+                LIMIT ?;
+            """, (limit,))
+            return [dict(r) for r in cur.fetchall()]
 
 def get_top_sellers(limit: int = 5, year: Optional[int] = None) -> List[Dict[str, Any]]:
     """Retrieves top sellers in < 1ms."""

@@ -491,6 +491,44 @@ def format_usd_rate(r: Dict[str, Any], lang: str = "uz") -> str:
             f"ℹ️ <i>Данный курс используется для пересчета экспортных сделок в национальной валюте.</i>"
         )
 
+def format_usd_rate_yearly(stats: Dict[str, Any], lang: str = "uz") -> str:
+    """Formats annual USD exchange rate statistics."""
+    is_uz = (lang == "uz")
+    year = stats.get("year", 2022)
+    min_r = format_number(stats.get("min_rate", 0))
+    max_r = format_number(stats.get("max_rate", 0))
+    avg_r = format_number(stats.get("avg_rate", 0))
+    start_r = format_number(stats.get("start_rate", 0))
+    start_d = stats.get("start_date", f"01.01.{year}")
+    end_r = format_number(stats.get("end_rate", 0))
+    end_d = stats.get("end_date", f"31.12.{year}")
+    cnt = stats.get("count", 365)
+
+    if is_uz:
+        return (
+            f"💵 <b>{year}-YILDAGI AQSH DOLLARI KURSI</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📊 <b>O'rtacha kurs:</b> <b>1 USD = {avg_r} so'm</b>\n"
+            f"📈 <b>Maksimal kurs:</b> {max_r} so'm\n"
+            f"📉 <b>Minimal kurs:</b> {min_r} so'm\n"
+            f"🗓 <b>Yil boshida ({start_d}):</b> {start_r} so'm\n"
+            f"🗓 <b>Yil yakunida ({end_d}):</b> {end_r} so'm\n"
+            f"📅 <b>Hisoblangan kunlar:</b> {cnt} kun\n\n"
+            f"ℹ️ <i>Ma'lumotlar Markaziy bankning birja hisob-kitoblarida qo'llanilgan rasmiy kurslar reyestridan olindi.</i>"
+        )
+    else:
+        return (
+            f"💵 <b>КУРС ДОЛЛАРА США ЗА {year} ГОД</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📊 <b>Средний курс:</b> <b>1 USD = {avg_r} сум</b>\n"
+            f"📈 <b>Максимальный курс:</b> {max_r} сум\n"
+            f"📉 <b>Минимальный курс:</b> {min_r} сум\n"
+            f"🗓 <b>На начало года ({start_d}):</b> {start_r} сум\n"
+            f"🗓 <b>На конец года ({end_d}):</b> {end_r} сум\n"
+            f"📅 <b>Количество дней:</b> {cnt} дней\n\n"
+            f"ℹ️ <i>Данные получены из официального реестра курсов ЦБ, применяемых в биржевых расчетах.</i>"
+        )
+
 def format_product_top_sellers(product_name: str, sellers: List[Dict[str, Any]], lang: str = "uz") -> str:
     """Formats top sellers for a specific commodity."""
     is_uz = (lang == "uz")
@@ -555,6 +593,7 @@ def format_extreme_deal(d: Dict[str, Any], extreme_type: str = "max_amount", lan
     """Formats the largest or most extreme trade."""
     is_uz = (lang == "uz")
     deal_num = d["deal_number"]
+    contract_num = d.get("contract_number", "—")
     title_uz = "РЕКОРД БИТИМ: ЭНГ ЙИРИК БИРЖА БИТИМИ" if extreme_type == "max_amount" else "БИРЖА БИТИМИ"
     title_ru = "РЕКОРДНАЯ СДЕЛКА: КРУПНЕЙШАЯ НА БИРЖЕ" if extreme_type == "max_amount" else "БИРЖЕВАЯ СДЕЛКА"
 
@@ -562,6 +601,7 @@ def format_extreme_deal(d: Dict[str, Any], extreme_type: str = "max_amount", lan
         return (
             f"💎 <b>{title_uz} № {deal_num}</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
+            f"📄 <b>Shartnoma raqami:</b> № <code>{contract_num}</code>\n"
             f"📅 <b>Sana:</b> {d['deal_date']}\n"
             f"📦 <b>Mahsulot:</b> {d['product_name']}\n"
             f"💰 <b>Bitim summasi:</b> <b>{format_number(d['amount'])} so'm</b>\n"
@@ -576,6 +616,7 @@ def format_extreme_deal(d: Dict[str, Any], extreme_type: str = "max_amount", lan
         return (
             f"💎 <b>{title_ru} № {deal_num}</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
+            f"📄 <b>Номер контракта:</b> № <code>{contract_num}</code>\n"
             f"📅 <b>Дата:</b> {d['deal_date']}\n"
             f"📦 <b>Товар:</b> {d['product_name']}\n"
             f"💰 <b>Сумма сделки:</b> <b>{format_number(d['amount'])} сум</b>\n"
@@ -586,6 +627,38 @@ def format_extreme_deal(d: Dict[str, Any], extreme_type: str = "max_amount", lan
             f"🛒 <b>Покупатель:</b> {d.get('buyer_name') or d['buyer_inn']} (ИНН: <code>{d['buyer_inn']}</code>)\n"
             f"📊 <b>Статус:</b> {d.get('deal_state', '')}"
         )
+
+def format_top_contracts(contracts: List[Dict[str, Any]], lang: str = "uz") -> str:
+    """Formats top contracts leaderboard."""
+    is_uz = (lang == "uz")
+    if is_uz:
+        lines = [
+            "🏆 <b>ENG YIRIK BIRJA SHARTNOMALARI (TOP-5)</b>",
+            "━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, c in enumerate(contracts, 1):
+            s_name = f" | {c['seller_name']}" if c.get("seller_name") else ""
+            lines.append(
+                f"<b>{idx}. Shartnoma № {c['contract_number']}</b>\n"
+                f"   📦 {c['product_name']}\n"
+                f"   💰 Jami aylanma: <b>{format_number(c['total_uzs'])} so'm</b>\n"
+                f"   📊 Bitimlar: {format_number(c['deals_count'], 0)} ta | Hajm: {format_number(c.get('total_volume', 0))} {c.get('unit', '')}{s_name}\n"
+            )
+        return "\n".join(lines)
+    else:
+        lines = [
+            "🏆 <b>ТОП-5 КРУПНЕЙШИХ БИРЖЕВЫХ КОНТРАКТОВ</b>",
+            "━━━━━━━━━━━━━━━━━━",
+        ]
+        for idx, c in enumerate(contracts, 1):
+            s_name = f" | {c['seller_name']}" if c.get("seller_name") else ""
+            lines.append(
+                f"<b>{idx}. Контракт № {c['contract_number']}</b>\n"
+                f"   📦 {c['product_name']}\n"
+                f"   💰 Общий оборот: <b>{format_number(c['total_uzs'])} сум</b>\n"
+                f"   📊 Сделок: {format_number(c['deals_count'], 0)} | Объем: {format_number(c.get('total_volume', 0))} {c.get('unit', '')}{s_name}\n"
+            )
+        return "\n".join(lines)
 
 def format_top_brokers(brokers: List[Dict[str, Any]], lang: str = "uz") -> str:
     """Formats top brokers leaderboard."""

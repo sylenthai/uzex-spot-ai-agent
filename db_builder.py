@@ -544,6 +544,27 @@ def build_database():
     """)
     cur.execute("CREATE INDEX idx_tbs_code ON top_brokers_summary(broker_code);")
 
+    # Fast Top Contracts
+    cur.execute("""
+    CREATE TABLE top_contracts_summary AS
+    SELECT 
+        d.contract_number,
+        d.product_name,
+        py_lower(d.product_name) as product_name_lower,
+        COUNT(*) as deals_count,
+        SUM(d.amount) as total_uzs,
+        SUM(d.quantity * d.lot) as total_volume,
+        d.unit,
+        d.region,
+        p.name as seller_name
+    FROM deals d
+    LEFT JOIN participants p ON d.seller_inn = p.inn
+    GROUP BY d.contract_number
+    ORDER BY total_uzs DESC;
+    """)
+    cur.execute("CREATE INDEX idx_tcs_num ON top_contracts_summary(contract_number);")
+    cur.execute("CREATE INDEX idx_tcs_total ON top_contracts_summary(total_uzs DESC);")
+
     conn.commit()
     print(f"Summary tables created in {time.time() - sum_start:.2f}s")
 

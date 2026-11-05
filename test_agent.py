@@ -245,10 +245,36 @@ class TestUzexSpotAgentHarden(unittest.TestCase):
         self.assertTrue(res2["found"])
         self.assertIn("Хлопок", res2["response_text"])
 
+    def test_24_extreme_deal_contract(self):
+        """Tests that 'eng yirik bitim shartnomasi qaysi' returns the deal and its contract."""
+        res = route_query("eng yirik bitim shartnomasi qaysi", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "extreme_deal")
+        self.assertIn("101166", res["response_text"])
+        self.assertIn("247890", res["response_text"])
+        self.assertIn("30 190 376 286", res["response_text"])
+
+    def test_25_usd_rate_by_year(self):
+        """Tests annual USD rate calculation for 2022."""
+        res = route_query("2022 yilda dollar kursi", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "usd_rate")
+        self.assertIn("2022-YILDAGI AQSH DOLLARI KURSI", res["response_text"])
+        self.assertIn("11 052.23", res["response_text"])
+        self.assertIn("365 kun", res["response_text"])
+
+    def test_26_top_contracts_ranking(self):
+        """Tests top contracts ranking."""
+        res = route_query("eng yirik shartnoma qaysi", forced_lang="uz")
+        self.assertTrue(res["found"])
+        self.assertEqual(res["intent"], "top_contracts")
+        self.assertIn("100259", res["response_text"])
+        self.assertIn("1 212 559 343 361", res["response_text"])
+
     # =========================================================================
     # 6. SUB-20MS PERFORMANCE BENCHMARK
     # ==========================================
-    def test_24_performance_latency_benchmark(self):
+    def test_27_performance_latency_benchmark(self):
         """Benchmarks query engine over 30 representative diverse queries."""
         benchmark_queries = [
             "504707", "100001", "280091", "shartnoma 100034", "915688255",

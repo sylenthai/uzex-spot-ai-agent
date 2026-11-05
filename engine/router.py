@@ -444,6 +444,24 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
                     "response_text": AntiHallucinationGuardrail.get_not_found_response(lang),
                     "raw_data": None
                 }
+        elif year:
+            rate_stats = database.get_usd_rate_by_year(year)
+            if rate_stats:
+                return {
+                    "intent": "usd_rate",
+                    "language": lang,
+                    "found": True,
+                    "response_text": formatter.format_usd_rate_yearly(rate_stats, lang),
+                    "raw_data": rate_stats
+                }
+            else:
+                return {
+                    "intent": "usd_rate",
+                    "language": lang,
+                    "found": False,
+                    "response_text": AntiHallucinationGuardrail.get_not_found_response(lang),
+                    "raw_data": None
+                }
         else:
             latest_rate = database.get_latest_usd_rate()
             if latest_rate:
@@ -522,11 +540,29 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
                 }
 
     # ----------------------------------------------------
-    # 7. EXTREME TRADES (Largest / Smallest Deal)
+    # 7. EXTREME TRADES & TOP CONTRACTS
     # ----------------------------------------------------
+    # Top contracts
+    if any(k in lower for k in [
+        "top shartnoma", "eng yirik shartnoma", "yirik shartnoma", "eng katta shartnoma",
+        "shartnomalar reytingi", "топ контракт", "крупнейший контракт", "лидеры контракт"
+    ]):
+        top_c = database.get_top_contracts(limit=5)
+        if top_c:
+            resp_text = formatter.format_top_contracts(top_c, lang)
+            return {
+                "intent": "top_contracts",
+                "language": lang,
+                "found": True,
+                "response_text": resp_text,
+                "raw_data": top_c
+            }
+
     if any(k in lower for k in [
         "eng qimmat bitim", "eng yirik bitim", "eng katta bitim", "rekord bitim",
-        "eng katta savdo", "самая крупная сделка", "самая дорогая сделка", "рекордная сделка"
+        "eng katta savdo", "eng yirik savdo", "yirik bitim", "eng yirik bitim shartnomasi",
+        "eng katta bitim shartnomasi", "самая крупная сделка", "самая дорогая сделка",
+        "рекордная сделка", "крупнейшая сделка", "крупнейшие сделки"
     ]):
         ext_deal = database.get_extreme_deal("max_amount", year=year)
         if ext_deal:
@@ -541,7 +577,8 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
             }
 
     if any(k in lower for k in [
-        "eng arzon bitim", "eng kichik bitim", "минимальная сделка", "самая дешевая сделка"
+        "eng arzon bitim", "eng kichik bitim", "минимальная сделка", "самая дешевая сделка",
+        "самая мелкая сделка"
     ]):
         ext_deal = database.get_extreme_deal("min_amount", year=year)
         if ext_deal:

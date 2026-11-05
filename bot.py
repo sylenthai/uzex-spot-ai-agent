@@ -347,7 +347,7 @@ def ensure_database():
             c.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = {r[0] for r in c.fetchall()}
             conn.close()
-            required = ["deals", "contracts", "participants", "product_summary", "product_top_sellers", "product_top_buyers", "top_brokers_summary"]
+            required = ["deals", "contracts", "participants", "product_summary", "product_top_sellers", "product_top_buyers", "top_brokers_summary", "top_contracts_summary"]
             if any(t not in tables for t in required):
                 logger.warning("Database missing critical summary tables. Rebuilding...")
                 rebuild = True
