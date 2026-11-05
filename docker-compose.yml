@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  uzex_bot:
+    build: .
+    container_name: uzex_spot_ai_bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./uzex_data.db:/app/uzex_data.db
+    ports:
+      - "8000:8000"
+    command: python bot.py
