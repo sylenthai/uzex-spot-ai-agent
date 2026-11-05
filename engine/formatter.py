@@ -439,11 +439,12 @@ def format_top_products(products: List[Dict[str, Any]], lang: str = "uz", year: 
 def format_market_overview(m: Dict[str, Any], lang: str = "uz") -> str:
     """Formats general market overview."""
     is_uz = (lang == "uz")
-
+    raw_year = str(m.get('year', ''))
     if is_uz:
+        period_text = raw_year if raw_year else "Barcha yillar (2022–2026)"
         return (
             f"📈 <b>UZEX BIRJA UMUMIY KO'RSATKICHLARI</b>\n"
-            f"Davr: <b>{m['year']}</b>\n"
+            f"Davr: <b>{period_text}</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"🔢 <b>Jami bitimlar soni:</b> <b>{format_number(m['total_deals'], 0)} ta</b>\n"
             f"💰 <b>Umumiy aylanma:</b> <b>{format_number(m['total_uzs'])} so'm</b>\n"
@@ -455,9 +456,10 @@ def format_market_overview(m: Dict[str, Any], lang: str = "uz") -> str:
             f"🚢 <b>Eksport bitimlari:</b> {format_number(m['export_deals'], 0)} ta (${format_number(m['export_amount_usd'])} USD)"
         )
     else:
+        period_text = "Все годы (2022–2026 гг.)" if "barcha" in raw_year.lower() or not raw_year else f"{raw_year} год"
         return (
             f"📈 <b>ОБЩИЕ ПОКАЗАТЕЛИ БИРЖИ UZEX</b>\n"
-            f"Период: <b>{m['year']}</b>\n"
+            f"Период: <b>{period_text}</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"🔢 <b>Всего заключено сделок:</b> <b>{format_number(m['total_deals'], 0)}</b>\n"
             f"💰 <b>Совокупный объём торгов:</b> <b>{format_number(m['total_uzs'])} сум</b>\n"

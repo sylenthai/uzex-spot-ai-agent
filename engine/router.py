@@ -147,11 +147,11 @@ def route_query(user_text: str, forced_lang: Optional[str] = None) -> Dict[str, 
     # 0. MODEL SECRECY & AGENT IDENTITY DEFENSE
     # ----------------------------------------------------
     identity_triggers = [
-        "qaysi model", "qanaqa model", "deepseek", "chatgpt", "gpt",
-        "openai", "sen kimsan", "kim yaratgan", "kim sansan", "modelin nima",
-        "какая модель", "ты кто", "кто тебя создал", "дипсик", "дип сик",
-        "чатгпт", "гпт", "опенаи", "твоя модель", "что за модель",
-        "архитектура", "нейросеть"
+        "model", "модел", "deepseek", "chatgpt", "gpt",
+        "openai", "claude", "llm", "sen kimsan", "siz kimsiz", "kim yaratgan",
+        "kim sansan", "modelin nima", "ты кто", "кто ты", "кто тебя создал",
+        "дипсик", "дип сик", "чатгпт", "гпт", "опенаи", "нейросеть",
+        "архитектура", "o'zing haqingda", "haqingda ayt", "о себе", "расскажи о себе"
     ]
     if any(t in lower for t in identity_triggers):
         resp = IDENTITY_RESPONSE_UZ if lang == "uz" else IDENTITY_RESPONSE_RU
