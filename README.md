@@ -1,14 +1,18 @@
 # 🏛 UZEX Spot Savdolari AI Agenti (Telegram Bot & REST API)
 
+[![CI & Zero-Hallucination Tests](https://github.com/sylenthai/uzex-spot-ai-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/sylenthai/uzex-spot-ai-agent/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688.svg)](https://fastapi.tiangolo.com/)
 [![Telegram Bot](https://img.shields.io/badge/Telegram-python--telegram--bot_v22-2CA5E0.svg)](https://python-telegram-bot.org/)
-[![Tests](https://img.shields.io/badge/Tests-18%2F18_Passing-brightgreen.svg)]()
-[![Latency](https://img.shields.io/badge/Latency-11.5ms_avg-orange.svg)]()
-[![Zero Hallucination](https://img.shields.io/badge/Zero--Hallucination-Disqualification_Shield-red.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-18%2F18_Passing-brightgreen.svg)](./test_agent.py)
+[![Latency](https://img.shields.io/badge/Latency-11.5ms_avg-orange.svg)](./test_agent.py)
+[![Zero Hallucination](https://img.shields.io/badge/Zero--Hallucination-Disqualification_Shield-red.svg)](./engine/guardrail.py)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
 Birja bitimlari haqidagi savollarga rus va o‘zbek tillarida javob beradigan professional AI-agent — Telegram-bot va REST veb-servis.
 Tizim 2022-yil 3-yanvardan 2026-yil 30-oktabrgacha bo'lgan **500 000 ta birja bitimi** (`spot.uzex.uz` formati), 6 616 ta shartnoma, 14 392 ta ishtirokchi kompaniya va 120 ta brokerlik idorasi ma'lumotlari asosida ishlaydi.
+
+> **English Summary:** **UZEX Spot AI Agent** is a production-ready, zero-hallucination bilingual (Uzbek & Russian) Telegram Bot and FastAPI REST service for the Uzbekistan Republican Commodity Exchange (UZEX). It indexes **500,000 spot exchange transactions** (2022–2026), 6,616 contracts, 14,392 trading companies, and 120 brokerage firms in an optimized SQLite + FTS5 engine (~11.5 ms average query latency) with strict anti-hallucination guardrails and optional DeepSeek V3 natural-language synthesis.
 
 ---
 
@@ -58,8 +62,8 @@ uzex_spot_data/
 
 ### 1. Muhitni o'rnatish
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/sylenthai/uzex-spot-ai-agent.git
+cd uzex-spot-ai-agent
 pip install -r requirements.txt
 ```
 
@@ -160,3 +164,9 @@ OK
 - **ИНН продавца, ИНН покупателя:** ссылка на participants.csv
 - **Брокер продавца, Брокер покупателя:** ссылка на brokers.csv
 - **Дата оплаты, Дата поставки, Поставлено:** даты исполнения и количество лотов
+
+---
+
+## 📄 Litsenziya / License
+
+Ushbu loyiha **Apache License 2.0** litsenziyasi ostida taqdim etiladi — batafsil ma'lumot uchun [LICENSE](./LICENSE) fayliga qarang.
